@@ -1,4 +1,4 @@
-part of '../typed_data.dart';
+part of '../flags.dart';
 
 ///
 ///
@@ -320,7 +320,7 @@ sealed class _PFlags {
               buffer.write('$month)'.padLeft(4));
               buffer.write(' :');
               buffer.write(' ');
-              buffer.writeBitsOfMonth(field[j], monthDaysOf(year, month));
+              buffer.writeBitsOfMonth(field[j], _monthDaysOf(year, month));
               buffer.writeln(' |');
               month++;
               if (month > december) {

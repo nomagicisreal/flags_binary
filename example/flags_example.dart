@@ -1,5 +1,5 @@
 
-import 'package:flags/typed_data.dart';
+import 'package:flags/flags.dart';
 
 void main() {
   final field = Field2D(10, 6);

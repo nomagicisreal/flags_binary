@@ -1,4 +1,4 @@
-part of '../../typed_data.dart';
+part of '../../flags.dart';
 
 ///
 ///
@@ -52,7 +52,7 @@ class FieldDatesInMonths extends FieldParent
     final dBegin = begin.$3;
     final yEnd = limit?.$1 ?? end.$1;
     final mEnd = limit?.$2 ?? end.$2;
-    final dEnd = limit?.$3 ?? monthDaysOf(yEnd, mEnd);
+    final dEnd = limit?.$3 ?? _monthDaysOf(yEnd, mEnd);
     assert(yBegin <= yEnd);
 
     // ==
@@ -69,7 +69,7 @@ class FieldDatesInMonths extends FieldParent
       }
 
       // <
-      final daysOf = monthDaysOf;
+      final daysOf = _monthDaysOf;
       var i = dBegin;
       var limit = daysOf(yBegin, mBegin);
       for (; i < limit; i++) {
@@ -88,7 +88,7 @@ class FieldDatesInMonths extends FieldParent
     }
 
     // <
-    final daysOf = monthDaysOf;
+    final daysOf = _monthDaysOf;
     var i = dBegin;
     var iLimit = daysOf(yBegin, mBegin);
     for (; i < iLimit; i++) {

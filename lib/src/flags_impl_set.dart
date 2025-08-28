@@ -1,4 +1,4 @@
-part of '../typed_data.dart';
+part of '../flags.dart';
 
 ///
 ///
@@ -67,17 +67,17 @@ mixin _MSetFieldMonthsDatesScoped
   /// [lastInMonth]
   ///
   int? firstInMonth(int year, int month) {
-    assert(isValidMonth(month));
+    assert(_isValidMonth(month));
     final field = _field, i = _indexOfMonth(year, month);
     return i < 0 || i >= field.length ? null : field.bFirstOf(i);
   }
 
   int? lastInMonth(int year, int month) {
-    assert(isValidMonth(month));
+    assert(_isValidMonth(month));
     final field = _field, i = _indexOfMonth(year, month);
     return i < 0 || i >= field.length
         ? null
-        : field.bLastOf(i, monthDaysOf(year, month));
+        : field.bLastOf(i, _monthDaysOf(year, month));
   }
 
   ///
@@ -134,7 +134,7 @@ mixin _MSetFieldMonthsDatesScoped
 
     final dDate = date.$3;
     int? d;
-    if (dDate == monthDaysOf(yDate, mDate)) {
+    if (dDate == _monthDaysOf(yDate, mDate)) {
       if (!nextMonth()) return null;
       d = field.bFirstOf(i);
     } else {
@@ -156,7 +156,7 @@ mixin _MSetFieldMonthsDatesScoped
   ///
   @override
   (int, int, int)? get last {
-    final end = this.end, field = _field, daysOf = monthDaysOf;
+    final end = this.end, field = _field, daysOf = _monthDaysOf;
     for (var y = end.$1, m = end.$2, i = field.length - 1; i > -1; i--) {
       final d = field.bLastOf(i, daysOf(y, m));
       if (d != null) return (y, m, d);
@@ -174,7 +174,7 @@ mixin _MSetFieldMonthsDatesScoped
     if (mi == null) return null;
     final field = _field, mLimit = year == begin.$1 ? begin.$2 - 1 : 0;
     for (var m = mi.$1, i = mi.$2; m > mLimit; m--, i++) {
-      final d = field.bLastOf(i, monthDaysOf(year, m));
+      final d = field.bLastOf(i, _monthDaysOf(year, m));
       if (d != null) return (year, m, d);
     }
     return null;
@@ -203,14 +203,14 @@ mixin _MSetFieldMonthsDatesScoped
     int? d;
     if (dDate == 1) {
       if (!nextMonth()) return null;
-      d = field.bLastOf(i, monthDaysOf(yDate, mDate));
+      d = field.bLastOf(i, _monthDaysOf(yDate, mDate));
     } else {
       d = field.bLastOf(i, dDate - 1);
     }
     if (d != null) return (y, m, d);
     if (!nextMonth()) return null;
     do {
-      d = field.bLastOf(i, monthDaysOf(y, m));
+      d = field.bLastOf(i, _monthDaysOf(y, m));
       if (d != null) return (y, m, d);
     } while (nextMonth());
     return null;
@@ -279,7 +279,7 @@ mixin _MSetFieldMonthsDatesScoped
     if (year != null) {
       // dates in a year month
       if (month != null) {
-        assert(isValidMonth(month));
+        assert(_isValidMonth(month));
         final i = _indexOfMonth(year, month);
         if (i >= field.length) return;
         yield* field.bsMappedOf(i, (d) => (year, month, d));
@@ -298,7 +298,7 @@ mixin _MSetFieldMonthsDatesScoped
 
     // dates in same month
     if (month != null) {
-      assert(isValidMonth(month));
+      assert(_isValidMonth(month));
       final yBegin = begin.$1, yEnd = end.$1;
       if (yBegin == yEnd) {
         assert(month >= begin.$2 && month <= end.$2);

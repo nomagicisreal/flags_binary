@@ -1,23 +1,17 @@
-part of '../typed_data.dart';
+part of '../flags.dart';
 
 ///
 /// [_monthsDays]
-///
 /// [_predicator_less]
-/// [_predicator_additionLess]
-/// [_isYearLeapYear]
-/// [monthDaysOf]
-/// [_isValidYearMonthScope], [isValidMonth]
+/// [_isYearLeapYear], ...
+/// [_monthDaysOf]
+/// [_reduce_isLarger], ...
 ///
 /// [_IntExtension]
 /// [_NullableExtension]
 /// [_StringBufferExtension]
 /// [_Record2Int]
 /// [_Record3Int]
-///
-///
-///
-
 ///
 ///
 ///
@@ -38,64 +32,65 @@ const Map<int, int> _monthsDays = {
 ///
 ///
 ///
-bool Function(int) _predicator_less(int a) => (v) => v < a;
+bool Function(int) _predicator_less(int a) =>
+    (v) => v < a;
 
-bool Function(int) _predicator_additionLess(int a, int b) => (v) => a + v < b;
+bool Function(int) _predicator_additionLess(int a, int b) =>
+    (v) => a + v < b;
 
-bool _isYearLeapYear(int year) =>
-    year % 4 == 0
-        ? year % 100 == 0
-            ? year % 400 == 0
+///
+///
+///
+bool _isYearLeapYear(int year) => year % 4 == 0
+    ? year % 100 == 0
+          ? year % 400 == 0
                 ? true
                 : false
-            : true
-        : false;
+          : true
+    : false;
 
-int monthDaysOf(int year, int month) =>
-    month == 2
-        ? _isYearLeapYear(year)
-            ? 29
-            : 28
-        : _monthsDays[month]!;
+bool _isValidYearMonthScope((int, int) begin, (int, int) end) =>
+    _isValidMonth(begin.$2) && _isValidMonth(end.$2) && begin < end;
+
+bool _isInvalidMonth(int month) =>
+    month < DateTime.january || month > DateTime.december;
+
+bool _isValidMonth(int month) => month > 0 && month < 13;
+
+// bool _isValidHour(int hour) => hour > -1 && hour < 24;
+
+// bool _isInvalidHour(int hour) => hour < 0 || hour > 23;
+
+bool _isValidDay(int year, int month, int day) =>
+    day > 0 && day < _monthDaysOf(year, month) + 1;
+
+bool _isValidDate((int, int, int) date) {
+  final month = date.$2;
+  if (_isInvalidMonth(month)) return false;
+  return _isValidDay(date.$1, month, date.$3);
+}
+
+///
+///
+///
+int _monthDaysOf(int year, int month) => month == 2
+    ? _isYearLeapYear(year)
+          ? 29
+          : 28
+    : _monthsDays[month]!;
 
 int yearDaysOf(int year) => _isYearLeapYear(year) ? 366 : 365;
 
 ///
 ///
 ///
-bool _isValidYearMonthScope((int, int) begin, (int, int) end) =>
-    isValidMonth(begin.$2) && isValidMonth(end.$2) && begin < end;
+bool _reduce_isLarger(int a, int b) => a > b;
 
-bool isInvalidMonth(int month) =>
-    month < DateTime.january || month > DateTime.december;
+bool _reduce_isLargerOrEqual(int a, int b) => a >= b;
 
-bool isValidMonth(int month) => month > 0 && month < 13;
+bool _reduce_isLess(int a, int b) => a < b;
 
-bool isValidHour(int hour) => hour > -1 && hour < 24;
-
-bool isInvalidHour(int hour) => hour < 0 || hour > 23;
-
-bool isValidDay(int year, int month, int day) =>
-    day > 0 && day < monthDaysOf(year, month) + 1;
-
-bool _isValidDate((int, int, int) date) {
-  final month = date.$2;
-  if (isInvalidMonth(month)) return false;
-  return isValidDay(date.$1, month, date.$3);
-}
-
-///
-///
-///
-bool predicateReduce_larger(int a, int b) => a > b;
-
-bool predicateReduce_largerOrEqual(int a, int b) => a >= b;
-
-bool predicateReduce_less(int a, int b) => a < b;
-
-bool predicateReduce_lessOrEqual(int a, int b) => a <= b;
-
-bool predicateReduce_equal(int a, int b) => a == b;
+bool _reduce_isLessOrEqual(int a, int b) => a <= b;
 
 ///
 ///
@@ -182,25 +177,25 @@ extension _Record2Int on (int, int) {
   bool operator <((int, int) other) => _comparing(
     other.$1,
     other.$2,
-    predicateReduce_larger,
-    predicateReduce_less,
-    predicateReduce_less,
+    _reduce_isLarger,
+    _reduce_isLess,
+    _reduce_isLess,
   );
 
   bool largerOrEqualThan3((int, int, int) other) => _comparing(
     other.$1,
     other.$2,
-    predicateReduce_less,
-    predicateReduce_larger,
-    predicateReduce_largerOrEqual,
+    _reduce_isLess,
+    _reduce_isLarger,
+    _reduce_isLargerOrEqual,
   );
 
   bool lessOrEqualThan3((int, int, int) other) => _comparing(
     other.$1,
     other.$2,
-    predicateReduce_larger,
-    predicateReduce_less,
-    predicateReduce_lessOrEqual,
+    _reduce_isLarger,
+    _reduce_isLess,
+    _reduce_isLessOrEqual,
   );
 
   ///
@@ -223,7 +218,7 @@ extension _Record2Int on (int, int) {
       'invalid date: $this, ($year, $month)',
     );
     assert(
-      day == null || isValidDay(year, month, day),
+      day == null || _isValidDay(year, month, day),
       'invalid day: ($year, $month, $day)',
     );
     final yearCurrent = this.$1;
@@ -231,7 +226,7 @@ extension _Record2Int on (int, int) {
     var m = this.$2;
     if (yearCurrent < year) {
       for (; m < 13; m++) {
-        d += monthDaysOf(yearCurrent, m);
+        d += _monthDaysOf(yearCurrent, m);
       }
       for (var y = yearCurrent + 1; y < year; y++) {
         d += yearDaysOf(y);
@@ -239,9 +234,9 @@ extension _Record2Int on (int, int) {
       m = 1;
     }
     for (; m < month; m++) {
-      d += monthDaysOf(year, m);
+      d += _monthDaysOf(year, m);
     }
-    return d + (day ?? monthDaysOf(year, month));
+    return d + (day ?? _monthDaysOf(year, month));
   }
 }
 
@@ -280,12 +275,8 @@ extension _Record3Int on (int, int, int) {
     return reduceFinal(three, threeAnother);
   }
 
-  bool operator <((int, int, int) another) => _comparing(
-    another,
-    predicateReduce_larger,
-    predicateReduce_less,
-    predicateReduce_less,
-  );
+  bool operator <((int, int, int) another) =>
+      _comparing(another, _reduce_isLarger, _reduce_isLess, _reduce_isLess);
 
   // ///
   // /// [daysToDates]
