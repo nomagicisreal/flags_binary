@@ -1,12 +1,11 @@
-name: flags
-description: A starting point for Dart libraries or applications.
-version: 0.0.1
-# repository: https://github.com/my_org/my_repo
+name: flags_binary
+description: a package for handling bits (0, 1) binary state
+version: 0.0.2
+repository: https://github.com/nomagicisreal/flags_binary
 
 environment:
   sdk: ^3.8.1
 
-# Add regular dependencies here.
 dependencies:
   # path: ^1.8.0
 

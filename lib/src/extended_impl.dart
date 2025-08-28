@@ -1,4 +1,4 @@
-part of '../flags.dart';
+part of '../flags_binary.dart';
 
 ///
 /// [_monthsDays]
