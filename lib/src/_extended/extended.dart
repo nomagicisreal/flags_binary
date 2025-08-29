@@ -1,4 +1,4 @@
-part of '../flags_binary.dart';
+part of '../../flags_binary.dart';
 
 ///
 ///
@@ -101,8 +101,6 @@ extension TypedIntList on TypedDataList<int> {
   ///
   /// [bFirstOf]
   /// [bLastOf]
-  /// [bsOf]
-  /// [bsMappedOf]
   ///
   int? bFirstOf(int i, [int from = 1]) {
     for (var bits = this[i] >> from - 1, p = from; bits > 0; bits >>= 1, p++) {
@@ -122,6 +120,13 @@ extension TypedIntList on TypedDataList<int> {
     return null;
   }
 
+  ///
+  /// [bsOf]
+  /// [bsMappedOf]
+  /// [bsMappedOfTo]
+  /// [bsMappedFrom]
+  /// [bsMappedTo]
+  ///
   Iterable<int> bsOf(int i, [int from = 1]) sync* {
     for (var bits = this[i] >> from - 1, p = from; bits > 0; bits >>= 1, p++) {
       if (bits & 1 == 1) yield p;
@@ -135,6 +140,54 @@ extension TypedIntList on TypedDataList<int> {
   ]) sync* {
     for (var bits = this[i] >> from - 1, p = from; bits > 0; bits >>= 1, p++) {
       if (bits & 1 == 1) yield mapping(p);
+    }
+  }
+
+  Iterable<T> bsMappedOfTo<T>(
+    int i,
+    int to,
+    T Function(int) mapping, [
+    int from = 1,
+  ]) sync* {
+    for (
+      var bits = this[i] >> from - 1, p = from;
+      bits > 0 || p <= to;
+      bits >>= 1, p++
+    ) {
+      if (bits & 1 == 1) yield mapping(p);
+    }
+  }
+
+  Iterable<T> bsMappedFrom<T>(
+    int index,
+    T Function(int, int) mapping, [
+    int from = 1,
+  ]) sync* {
+    final length = this.length;
+    for (; index < length; index++) {
+      for (
+        var bits = this[index] >> from - 1, p = from;
+        bits > 0;
+        bits >>= 1, p++
+      ) {
+        if (bits & 1 == 1) yield mapping(index, p);
+      }
+    }
+  }
+
+  Iterable<T> bsMappedTo<T>(
+    int index,
+    T Function(int, int) mapping, [
+    int from = 1,
+  ]) sync* {
+    for (var i = 0; i <= index; i++) {
+      for (
+        var bits = this[i] >> from - 1, p = from;
+        bits > 0;
+        bits >>= 1, p++
+      ) {
+        if (bits & 1 == 1) yield mapping(i, p);
+      }
     }
   }
 

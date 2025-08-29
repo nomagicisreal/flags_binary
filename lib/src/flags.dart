@@ -46,94 +46,181 @@ sealed class _PFlags {
     String result = '';
 
     assert(() {
-      final buffer = StringBuffer('$runtimeType field:\n'),
-          instance = this,
-          borderLength = switch (instance) {
-            Field() =>
-              3 +
-                  '${instance.spatial1}'.length * 2 +
-                  4 +
-                  (instance._sizeEach + 3 >> 2) * 5 +
-                  2,
-            _AFlagsSpatial2() => // Field2D() || Field3D() || Field4D()
-              2 +
-                  '${instance.spatial2}'.length +
-                  2 +
-                  instance.spatial1 +
-                  (instance.spatial1 + 3 >> 2) +
-                  2,
-            FieldAB() =>
-              3 +
-                  6 +
-                  2 +
-                  switch (instance.bDivision) {
-                        1 => 6,
-                        2 || 3 => 4,
-                        _ => 3,
-                      } *
-                      (instance.bDivision + 1) +
-                  2,
-            FieldDatesInMonths() => 15 + 32 + 4 + 2,
-            _ => 10,
-          };
-      buffer.writeRepeat(borderLength, '-');
-      buffer.writeln();
+      final buffer = StringBuffer('$runtimeType field:\n'), flags = this;
 
       ///
       /// slot
       ///
-      if (instance is SlotParent) {
-        final slot = instance._slot,
+      if (flags is SlotParent) {
+        final slot = flags._slot,
             length = slot.length,
-            pad = '$length'.length + 1,
-            padItem = slot.map((s) => '$s'.length).reduce(math.max);
+            padItem = slot.map((s) => '$s'.length).reduce(math.max) + 1;
+        late final int padOverallSpace;
 
-        final _ = switch (instance) {
+        String itemOf(int i) => '${slot[i]}'.padLeft(padItem);
+        final _ = switch (flags) {
           Slot() || Slot2D() || Slot3D() || Slot4D() => () {
-            if (instance is Slot) {
+            if (flags is Slot) {
+              final pad = '${length - 1}'.length + 1;
+              padOverallSpace = 6 + pad;
+              buffer.writeRepeat(padOverallSpace, '-', true);
+              buffer.writeln('space: $length');
+              buffer.writeRepeat(padOverallSpace, '-', true);
               for (var i = 0; i < length; i++) {
                 if (i & 3 == 0) {
                   buffer.write('|');
-                  buffer.write('$i'.padLeft(pad));
-                  buffer.write('~');
-                  buffer.write('${math.min(i + 3, length - 1)}');
+                  final end = math.min(i + 3, length - 1);
+                  if (end == i) {
+                    buffer.write('$i'.padLeft(pad + 3));
+                  } else {
+                    buffer.write('$i'.padLeft(pad + 1));
+                    buffer.write('~$end');
+                  }
                 }
                 buffer.writeln();
-                buffer.write('|');
-                buffer.writeRepeat(pad - 1, '.');
-                buffer.write('${slot[i]}'.padLeft(padItem));
+                buffer.write('| ');
+                buffer.write('$i'.padRight(pad));
+                buffer.write(':');
+                buffer.write(itemOf(i));
                 if (i + 1 & 3 == 0) {
                   if (i == length - 1) break;
                   buffer.writeln();
-                  buffer.writeln('|');
+                }
+              }
+              buffer.writeln();
+              return;
+            }
+
+            void writeTitle(Iterable<int> record, Iterable<int> padding) {
+              buffer.writeRepeat(padOverallSpace, '-', true);
+              buffer.write('space: ');
+              buffer.writeRecord(record, padding, true);
+              buffer.writeRepeat(padOverallSpace, '-', true);
+            }
+
+            if (flags is Slot2D) {
+              final s1 = flags.spatial1,
+                  s2 = flags.spatial2,
+                  padI = '${s1 - 1}'.length + 1,
+                  padJ = '${s2 - 1}'.length + 1,
+                  padding = [padJ, padI];
+              padOverallSpace = padI + padJ + 10;
+              writeTitle([s2, s1], padding);
+              int start = 0;
+              for (var j = 0; j < s2; j++) {
+                for (var i = 0; i < s1; i++) {
+                  buffer.writeRecord([j, i], padding);
+                  buffer.write(' :');
+                  buffer.writeln(itemOf(start + i));
+                }
+                start += s1;
+              }
+              return;
+            }
+
+            if (flags is Slot3D) {
+              final s1 = flags.spatial1,
+                  s2 = flags.spatial2,
+                  s3 = flags.spatial3,
+                  padI = '${s1 - 1}'.length + 1,
+                  padJ = '${s2 - 1}'.length + 1,
+                  padK = '${s3 - 1}'.length + 1,
+                  padding = [padK, padJ, padI];
+              padOverallSpace = padI + padJ + padK + 11;
+              writeTitle([s3, s2, s1], padding);
+              int start = 0;
+              for (var k = 0; k < s3; k++) {
+                for (var j = 0; j < s2; j++) {
+                  for (var i = 0; i < s1; i++) {
+                    buffer.writeRecord([k, j, i], padding);
+                    buffer.write(' :');
+                    buffer.writeln(itemOf(start + i));
+                  }
+                  start += s1;
                 }
               }
               return;
             }
 
-            // void slotFlags2D(int spatial1, int spatial2) {
-            // }
-
-            if (instance is Slot2D) {}
+            if (flags is Slot4D) {
+              final s1 = flags.spatial1,
+                  s2 = flags.spatial2,
+                  s3 = flags.spatial3,
+                  s4 = flags.spatial4,
+                  padL = '${s4 - 1}'.length + 1,
+                  padK = '${s3 - 1}'.length + 1,
+                  padJ = '${s2 - 1}'.length + 1,
+                  padI = '${s1 - 1}'.length + 1,
+                  padding = [padL, padK, padJ, padI];
+              padOverallSpace = padI + padJ + padK + padL + 12;
+              writeTitle([s4, s3, s2, s1], padding);
+              int start = 0;
+              for (var l = 0; l < s4; l++) {
+                for (var k = 0; k < s3; k++) {
+                  for (var j = 0; j < s2; j++) {
+                    for (var i = 0; i < s1; i++) {
+                      buffer.writeRecord([l, k, j, i], padding);
+                      buffer.write(' :');
+                      buffer.writeln(itemOf(start + i));
+                    }
+                    start += s1;
+                  }
+                }
+              }
+              return;
+            }
 
             throw UnimplementedError();
           }(),
           SlotDatesInMonths() => throw UnimplementedError(),
         };
+        buffer.writeRepeat(padOverallSpace, '-');
+        buffer.writeln();
 
         ///
         /// field
         ///
-      } else if (instance is FieldParent) {
-        final field = instance._field, sizeEach = instance._sizeEach;
-        final _ = switch (instance) {
+      } else if (flags is FieldParent) {
+        final field = flags._field,
+            sizeEach = flags._sizeEach,
+            instance = this,
+            borderLength = switch (instance) {
+              SlotParent() => 0,
+              Field() =>
+                3 +
+                    '${instance.spatial1}'.length * 2 +
+                    4 +
+                    (instance._sizeEach + 3 >> 2) * 5 +
+                    2,
+              _AFlagsSpatial2() => // Field2D() || Field3D() || Field4D()
+                2 +
+                    '${instance.spatial2}'.length +
+                    2 +
+                    instance.spatial1 +
+                    (instance.spatial1 + 3 >> 2) +
+                    2,
+              FieldAB() =>
+                3 +
+                    6 +
+                    2 +
+                    switch (instance.bDivision) {
+                          1 => 6,
+                          2 || 3 => 4,
+                          _ => 3,
+                        } *
+                        (instance.bDivision + 1) +
+                    2,
+              FieldDatesInMonths() => 15 + 32 + 4 + 2,
+              _ => throw UnimplementedError(),
+            };
+        final _ = switch (flags) {
           Field() || Field2D() || Field3D() || Field4D() => () {
-            if (instance is Field) {
-              final spatial1 = instance.spatial1,
+            if (flags is Field) {
+              final spatial1 = flags.spatial1,
                   limit = field.length,
-                  pad = '${sizeEach * field.length}'.length + 1,
+                  pad = '${sizeEach * field.length - 1}'.length + 1,
                   jLast = field.length - 1,
-                  last = spatial1 & instance._mask;
+                  last = spatial1 & flags._mask;
 
               for (var j = 0; j < limit; j++) {
                 final start = j * sizeEach;
@@ -180,7 +267,7 @@ sealed class _PFlags {
               int l = 0,
               int pass = 0,
             ]) {
-              final pad = '$spatial2'.length + 1,
+              final pad = '${spatial2 - 1}'.length + 1,
                   limit = spatial1 >> 2,
                   padAfterBits = 5 - (spatial1 & 3) + 1;
 
@@ -201,17 +288,16 @@ sealed class _PFlags {
 
               var bits = field[l] >> pass;
               l++;
-              final nextField =
-                  field.length == 1
-                      ? null
-                      : (j, i) {
-                        if (i == spatial1) return;
-                        if (j * spatial1 + pass + i & mask == 0) {
-                          bits = field[l];
-                          pass = 0;
-                          l++;
-                        }
-                      };
+              final nextField = field.length == 1
+                  ? null
+                  : (j, i) {
+                      if (i == spatial1) return;
+                      if (j * spatial1 + pass + i & mask == 0) {
+                        bits = field[l];
+                        pass = 0;
+                        l++;
+                      }
+                    };
               for (var j = 0; j < spatial2; j++) {
                 buffer.write('|');
                 buffer.write('$j'.padLeft(pad));
@@ -228,8 +314,8 @@ sealed class _PFlags {
               }
             }
 
-            if (instance is Field2D) {
-              fieldFlags2(instance.spatial1, instance.spatial2, instance._mask);
+            if (flags is Field2D) {
+              fieldFlags2(flags.spatial1, flags.spatial2, flags._mask);
               return;
             }
 
@@ -264,33 +350,33 @@ sealed class _PFlags {
               }
             }
 
-            if (instance is Field3D) {
+            if (flags is Field3D) {
               fieldFlags3(
-                instance.spatial1,
-                instance.spatial2,
-                instance.spatial3,
-                instance._mask,
+                flags.spatial1,
+                flags.spatial2,
+                flags.spatial3,
+                flags._mask,
               );
               return;
             }
 
-            if (instance is Field4D) {
+            if (flags is Field4D) {
               buffer.writeRepeat(borderLength, '==');
               buffer.writeRepeat(borderLength, '==');
             }
             throw UnimplementedError();
           }(),
           FieldAB() => () {
-            final shift = instance._shift,
-                mask = instance._mask,
-                division = instance.bDivision,
+            final shift = flags._shift,
+                mask = flags._mask,
+                division = flags.bDivision,
                 hoursPerLine = switch (division) {
                   1 => 6,
                   2 || 3 => 4,
                   _ => 3,
                 },
                 size = hoursPerLine * division,
-                limit = (instance.aLimit - 1) ~/ hoursPerLine;
+                limit = (flags.aLimit - 1) ~/ hoursPerLine;
             var i = 0;
             for (var j = 0; j < limit; j++) {
               final h = j * hoursPerLine;
@@ -309,7 +395,7 @@ sealed class _PFlags {
           }(),
           FieldDatesInMonths() => () {
             final december = DateTime.december,
-                begin = instance.begin,
+                begin = flags.begin,
                 limit = field.length;
             var year = begin.$1, month = begin.$2;
 
@@ -330,12 +416,12 @@ sealed class _PFlags {
             }
           }(),
         };
+        buffer.writeRepeat(borderLength, '-');
+        buffer.writeln();
       } else {
         throw UnimplementedError();
       }
 
-      buffer.writeRepeat(borderLength, '-');
-      buffer.writeln();
       result = buffer.toString();
       return true;
     }());

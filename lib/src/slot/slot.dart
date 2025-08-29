@@ -76,7 +76,6 @@ class Slot3D<T> extends SlotParent<T>
 
   Slot3D.from(Field3D field)
     : this(field.spatial1, field.spatial2, field.spatial3);
-
 }
 
 class Slot4D<T> extends SlotParent<T>
@@ -95,7 +94,7 @@ class Slot4D<T> extends SlotParent<T>
   final int spatial4;
 
   Slot4D(this.spatial1, this.spatial2, this.spatial3, this.spatial4)
-    : super(spatial1 * spatial2);
+    : super(spatial1 * spatial2 * spatial3 * spatial4);
 
   Slot4D.from(Field4D field)
     : this(field.spatial1, field.spatial2, field.spatial3, field.spatial4);

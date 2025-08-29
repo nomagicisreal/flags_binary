@@ -3,8 +3,8 @@ library;
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-part 'src/extended.dart';
-part 'src/extended_impl.dart';
+part 'src/_extended/extended.dart';
+part 'src/_extended/extended_impl.dart';
 part 'src/field/field_custom.dart';
 part 'src/field/field.dart';
 part 'src/field/field_impl.dart';

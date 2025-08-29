@@ -1,4 +1,4 @@
-part of '../flags_binary.dart';
+part of '../../flags_binary.dart';
 
 ///
 /// [_monthsDays]
@@ -141,10 +141,36 @@ extension _StringBufferExtension on StringBuffer {
     }
   }
 
-  void writeRepeat(int n, String value) {
+  void writeRepeat(
+    int n,
+    String value, [
+    bool newLineEnd = false,
+    bool newLineEach = false,
+  ]) {
+    final writing = newLineEach ? writeln : write;
     for (var i = 0; i < n; i++) {
-      write(value);
+      writing(value);
     }
+    if (newLineEnd) writeln();
+  }
+
+  void writeRecord<T>(
+    Iterable<T> iterable,
+    Iterable<int> padding, [
+    bool newLineEnd = false,
+  ]) {
+    assert(iterable.length == padding.length);
+    final it = iterable.iterator;
+    final pad = padding.iterator;
+    write('(');
+    if (it.moveNext() && pad.moveNext()) {
+      write('${it.current}'.padLeft(pad.current));
+    }
+    while (it.moveNext() && pad.moveNext()) {
+      write(',');
+      write('${it.current}'.padLeft(pad.current));
+    }
+    newLineEnd ? writeln(')') : write(')');
   }
 }
 
@@ -203,14 +229,8 @@ extension _Record2Int on (int, int) {
   /// [daysToDate]
   /// [daysToDate]
   ///
-  int monthsToYearMonth(int year, int month) {
-    assert(
-      _isValidYearMonthScope(this, (year, month)),
-      'invalid date: $this, ($year, $month)',
-    );
-    final y = this.$1;
-    return month - this.$2 + (year - y) * 12;
-  }
+  int monthsToYearMonth(int year, int month) =>
+      month - this.$2 + (year - this.$1) * 12;
 
   int daysToDate(int year, int month, [int? day]) {
     assert(
