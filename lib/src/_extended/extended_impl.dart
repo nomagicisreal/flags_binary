@@ -1,6 +1,8 @@
 part of '../../flags_binary.dart';
 
 ///
+/// [_hoursADay]
+/// [_minuteADay]
 /// [_monthsDays]
 /// [_predicator_less]
 /// [_isYearLeapYear], ...
@@ -15,6 +17,8 @@ part of '../../flags_binary.dart';
 ///
 ///
 ///
+const int _hoursADay = 24;
+const int _minuteADay = 60;
 const Map<int, int> _monthsDays = {
   1: 31,
   3: 31,
@@ -86,9 +90,9 @@ int yearDaysOf(int year) => _isYearLeapYear(year) ? 366 : 365;
 ///
 bool _reduce_isLarger(int a, int b) => a > b;
 
-bool _reduce_isLargerOrEqual(int a, int b) => a >= b;
-
 bool _reduce_isLess(int a, int b) => a < b;
+
+bool _reduce_isLargerOrEqual(int a, int b) => a >= b;
 
 bool _reduce_isLessOrEqual(int a, int b) => a <= b;
 
@@ -139,6 +143,11 @@ extension _StringBufferExtension on StringBuffer {
       days >>= 1;
       i++;
     }
+
+    while (i < 32) {
+      write(' ');
+      i++;
+    }
   }
 
   void writeRepeat(
@@ -187,11 +196,11 @@ extension _Record2Int on (int, int) {
   ///
   bool _comparing(
     int a,
-    int b,
-    bool Function(int, int) reduceInvalid,
-    bool Function(int, int) reduce,
-    bool Function(int, int) reduceFinal,
-  ) {
+    int b, {
+    required bool Function(int, int) reduceInvalid,
+    required bool Function(int, int) reduce,
+    required bool Function(int, int) reduceFinal,
+  }) {
     final one = this.$1;
     if (reduceInvalid(one, a)) return false;
     if (reduce(one, a)) return true;
@@ -203,25 +212,25 @@ extension _Record2Int on (int, int) {
   bool operator <((int, int) other) => _comparing(
     other.$1,
     other.$2,
-    _reduce_isLarger,
-    _reduce_isLess,
-    _reduce_isLess,
+    reduceInvalid: _reduce_isLarger,
+    reduce: _reduce_isLess,
+    reduceFinal: _reduce_isLess,
   );
 
   bool largerOrEqualThan3((int, int, int) other) => _comparing(
     other.$1,
     other.$2,
-    _reduce_isLess,
-    _reduce_isLarger,
-    _reduce_isLargerOrEqual,
+    reduceInvalid: _reduce_isLess,
+    reduce: _reduce_isLarger,
+    reduceFinal: _reduce_isLargerOrEqual,
   );
 
   bool lessOrEqualThan3((int, int, int) other) => _comparing(
     other.$1,
     other.$2,
-    _reduce_isLarger,
-    _reduce_isLess,
-    _reduce_isLessOrEqual,
+    reduceInvalid: _reduce_isLarger,
+    reduce: _reduce_isLess,
+    reduceFinal: _reduce_isLessOrEqual,
   );
 
   ///

@@ -203,8 +203,8 @@ mixin _MFieldContainerPositionAble<I> on _MBitsField
   }
 }
 
-mixin _MFieldContainerMonthsDates
-    implements _AFlagsContainer<(int, int, int), bool>, _MBitsFieldMonthsDates {
+mixin _MFieldContainerMonthsDates on _MFlagsContainerScopedDate<bool>
+    implements _MBitsFieldMonthsDates {
   @override
   bool operator []((int, int, int) index) {
     assert(validateIndex(index));

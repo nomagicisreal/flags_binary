@@ -77,8 +77,6 @@ extension TypedIntList on TypedDataList<int> {
   ///
   /// [getPFirst1]
   /// [getPLast1]
-  /// [getPFirst1From]
-  /// [getPLast1From]
   ///
   static int? getPFirst1<T extends TypedDataList<int>>(T list, int sizeEach) =>
       list.pFirst(sizeEach);
@@ -86,54 +84,38 @@ extension TypedIntList on TypedDataList<int> {
   static int? getPLast1<T extends TypedDataList<int>>(T list, int sizeEach) =>
       list.pLast(sizeEach);
 
-  static int? getPFirst1From<T extends TypedDataList<int>>(
-    T list,
-    int k,
-    int sizeEach,
-  ) => list.pFirstFrom(k, sizeEach);
-
-  static int? getPLast1From<T extends TypedDataList<int>>(
-    T list,
-    int k,
-    int sizeEach,
-  ) => list.pLastFrom(k, sizeEach);
-
   ///
   /// [bFirstOf]
   /// [bLastOf]
   ///
-  int? bFirstOf(int i, [int from = 1]) {
-    for (var bits = this[i] >> from - 1, p = from; bits > 0; bits >>= 1, p++) {
+  int? bFirstOf(int j, [int from = 1]) {
+    for (var bits = this[j] >> from - 1, p = from; bits > 0; bits >>= 1, p++) {
       if (bits & 1 == 1) return p;
     }
     return null;
   }
 
-  int? bLastOf(int i, int from) {
-    for (
-      var bits = this[i], mask = 1 << from - 1, p = from;
-      mask > 0;
-      mask >>= 1, p--
-    ) {
-      if (bits & 1 == 1) return p;
+  int? bLastOf(int j, int from) {
+    for (var bits = this[j], i = from - 1; i > -1; i--) {
+      if ((bits & 1 << i) >> i == 1) return i + 1;
     }
     return null;
   }
 
   ///
-  /// [bsOf]
-  /// [bsMappedOf]
-  /// [bsMappedOfTo]
-  /// [bsMappedFrom]
-  /// [bsMappedTo]
+  /// [bitsOf]
+  /// [bitsMappedOf]
+  /// [bitsMappedOfTo]
+  /// [bitsMappedFrom]
+  /// [bitsMappedTo]
   ///
-  Iterable<int> bsOf(int i, [int from = 1]) sync* {
+  Iterable<int> bitsOf(int i, [int from = 1]) sync* {
     for (var bits = this[i] >> from - 1, p = from; bits > 0; bits >>= 1, p++) {
       if (bits & 1 == 1) yield p;
     }
   }
 
-  Iterable<T> bsMappedOf<T>(
+  Iterable<T> bitsMappedOf<T>(
     int i,
     T Function(int) mapping, [
     int from = 1,
@@ -143,7 +125,7 @@ extension TypedIntList on TypedDataList<int> {
     }
   }
 
-  Iterable<T> bsMappedOfTo<T>(
+  Iterable<T> bitsMappedOfTo<T>(
     int i,
     int to,
     T Function(int) mapping, [
@@ -158,7 +140,7 @@ extension TypedIntList on TypedDataList<int> {
     }
   }
 
-  Iterable<T> bsMappedFrom<T>(
+  Iterable<T> bitsMappedFrom<T>(
     int index,
     T Function(int, int) mapping, [
     int from = 1,
@@ -175,7 +157,7 @@ extension TypedIntList on TypedDataList<int> {
     }
   }
 
-  Iterable<T> bsMappedTo<T>(
+  Iterable<T> bitsMappedTo<T>(
     int index,
     T Function(int, int) mapping, [
     int from = 1,
@@ -221,40 +203,36 @@ extension TypedIntList on TypedDataList<int> {
 
   ///
   /// [pFirst]
-  /// [pN]
   /// [pLast]
+  /// [pN]
   ///
-  int? pFirst(int size, [int bit = 1]) {
+  int? pFirst(int sizeEach, [int bit = 1]) {
     final length = this.length;
     for (var j = 0; j < length; j++) {
       for (var i = 0, bits = this[j]; bits > 0; i++, bits >>= 1) {
-        if (bits & 1 == bit) return size * j + i;
+        if (bits & 1 == bit) return sizeEach * j + i;
       }
     }
     return null;
   }
 
-  int? pN(int n, int size, [int bit = 1]) {
+  int? pLast(int sizeEach, [int bit = 1]) {
+    for (var j = length - 1; j > -1; j--) {
+      for (var bits = this[j], i = sizeEach - 1; i > -1; i--) {
+        if ((bits & 1 << i) >> i == bit) return sizeEach * j + i + 1;
+      }
+    }
+    return null;
+  }
+
+  int? pN(int n, int sizeEach, [int bit = 1]) {
     final length = this.length;
     for (var j = 0; j < length; j++) {
       for (var i = 0, bits = this[j]; bits > 0; i++, bits >>= 1) {
         if (bits & 1 == bit) {
           n--;
-          if (n == 0) return size * j * i;
+          if (n == 0) return sizeEach * j * i;
         }
-      }
-    }
-    return null;
-  }
-
-  int? pLast(int size, [int bit = 1]) {
-    for (var j = length - 1; j > -1; j--) {
-      for (
-        var bits = this[j], mask = 1 << size - 1, i = size - 1;
-        mask > 0;
-        mask >>= 1, i--
-      ) {
-        if ((bits & mask) >> i == bit) return size * j + i;
       }
     }
     return null;
@@ -263,15 +241,12 @@ extension TypedIntList on TypedDataList<int> {
   ///
   /// [pFirstFrom]
   /// [pNFrom]
-  /// [pLastFrom]
+  /// [pLastTo]
   ///
-  int? pFirstFrom(int k, int size, [int bit = 1]) {
-    var j = k ~/ size;
-    var i = k & size - 1;
+  int? pFirstFrom(int j, int i, int sizeEach, [int bit = 1]) {
     var bits = this[j];
-
     while (bits > 0) {
-      if (bits & 1 == bit) return size * j + i;
+      if (bits & 1 == bit) return sizeEach * j + i;
       i++;
       bits >>= 1;
     }
@@ -282,7 +257,7 @@ extension TypedIntList on TypedDataList<int> {
       i = 0;
       bits = this[j];
       while (bits > 0) {
-        if (bits & 1 == bit) return size * j + i;
+        if (bits & 1 == bit) return sizeEach * j + i;
         i++;
         bits >>= 1;
       }
@@ -291,58 +266,19 @@ extension TypedIntList on TypedDataList<int> {
     return null;
   }
 
-  int? pNFrom(int k, int size, int n, [int bit = 1]) {
-    var j = k ~/ size;
-    var i = k & size - 1;
-    var bits = this[j];
-
-    while (bits > 0) {
-      if (bits & 1 == bit) {
-        n--;
-        if (n == 0) return size * j + i;
-      }
-      i++;
-      bits >>= 1;
-    }
-    j++;
-
-    final length = this.length;
-    while (j < length) {
-      i = 0;
-      bits = this[j];
-      while (bits > 0) {
-        if (bits & 1 == bit) {
-          n--;
-          if (n == 0) return size * j + i;
-        }
-        i++;
-        bits >>= 1;
-      }
-      j++;
-    }
-    return null;
-  }
-
-  int? pLastFrom(int k, int size, [int bit = 1]) {
-    var j = k ~/ size;
-    var i = k % size - 1;
-    var bits = this[j];
-    var mask = 1 << i - 1;
-
-    while (mask > 0) {
-      if ((bits & mask) >> i == bit) return size * j + i;
-      mask >>= 1;
+  int? pLastTo(int j, int p, int sizeEach, [int bit = 1]) {
+    var bits = this[j], i = p - 1;
+    while (i > -1) {
+      if ((bits & 1 << i) >> i == bit) return sizeEach * j + i + 1;
       i--;
     }
     j--;
 
     while (j > -1) {
-      i = size - 1;
+      i = sizeEach - 1;
       bits = this[j];
-      mask = 1 << i - 1;
-      while (mask > 0) {
-        if ((bits & mask) >> i == bit) return size * j + i;
-        mask >>= 1;
+      while (i > -1) {
+        if ((bits & 1 << i) >> i == bit) return sizeEach * j + i + 1;
         i--;
       }
       j--;
@@ -351,19 +287,48 @@ extension TypedIntList on TypedDataList<int> {
     return null;
   }
 
+  int? pNFrom(int j, int p, int sizeEach, int n, [int bit = 1]) {
+    var bits = this[j];
+    while (bits > 0) {
+      if (bits & 1 == bit) {
+        n--;
+        if (n == 0) return sizeEach * j + p;
+      }
+      p++;
+      bits >>= 1;
+    }
+    j++;
+
+    final length = this.length;
+    while (j < length) {
+      p = 1;
+      bits = this[j];
+      while (bits > 0) {
+        if (bits & 1 == bit) {
+          n--;
+          if (n == 0) return sizeEach * j + p;
+        }
+        p++;
+        bits >>= 1;
+      }
+      j++;
+    }
+    return null;
+  }
+
   ///
   ///
   /// [pAvailable], [mapPAvailable]
   /// [mapPAvailableFrom]
   /// [mapPAvailableTo]
-  /// [mapPAvailableBetween]
-  /// notice that [size] must be 2^n, so [size] - 1 will be [_Field8.mask8], [TypedIntList.mask16], ...
+  /// [mapPAvailableSub]
+  /// notice that [sizeEach] must be 2^n, so [sizeEach] - 1 will be [_Field8.mask8], [TypedIntList.mask16], ...
   ///
   ///
-  Iterable<int> pAvailable<T>(int size) sync* {
+  Iterable<int> pAvailable<T>(int sizeEach) sync* {
     final length = this.length;
     for (var j = 0; j < length; j++) {
-      final prefix = size * j;
+      final prefix = sizeEach * j;
       var bits = this[j];
       for (var i = 0; bits > 0; i++, bits >>= 1) {
         if (bits & 1 == 1) yield prefix + i;
@@ -371,10 +336,10 @@ extension TypedIntList on TypedDataList<int> {
     }
   }
 
-  Iterable<T> mapPAvailable<T>(int size, T Function(int) mapping) sync* {
+  Iterable<T> mapPAvailable<T>(int sizeEach, T Function(int) mapping) sync* {
     final length = this.length;
     for (var j = 0; j < length; j++) {
-      final prefix = size * j;
+      final prefix = sizeEach * j;
       var bits = this[j];
       for (var i = 0; bits > 0; i++, bits >>= 1) {
         if (bits & 1 == 1) yield mapping(prefix + i);
@@ -382,18 +347,17 @@ extension TypedIntList on TypedDataList<int> {
     }
   }
 
-  // inclusive
   Iterable<T> mapPAvailableFrom<T>(
-    int size,
+    int sizeEach,
     int from,
     T Function(int) mapping, [
     bool inclusive = true,
   ]) sync* {
     from += inclusive ? 0 : 1;
-    var j = from ~/ size;
-    final prefix = size * j;
+    var j = from ~/ sizeEach;
+    final prefix = sizeEach * j;
     for (
-      var i = from & size - 1, bits = this[j] >> i - 1;
+      var i = from & sizeEach - 1, bits = this[j] >> i - 1;
       bits > 0;
       i++, bits >>= 1
     ) {
@@ -403,16 +367,15 @@ extension TypedIntList on TypedDataList<int> {
 
     final length = this.length;
     for (; j < length; j++) {
-      final prefix = size * j;
+      final prefix = sizeEach * j;
       for (var i = 0, bits = this[j]; bits > 0; i++, bits >>= 1) {
         if (bits & 1 == 1) yield mapping(prefix + i);
       }
     }
   }
 
-  // inclusive
   Iterable<T> mapPAvailableTo<T>(
-    int size,
+    int sizeEach,
     int to,
     T Function(int) mapping, [
     bool inclusive = true,
@@ -420,24 +383,24 @@ extension TypedIntList on TypedDataList<int> {
     to -= inclusive ? 0 : 1;
     if (to < 1) return;
 
-    final limit = to ~/ size;
+    final limit = to ~/ sizeEach;
     for (var j = 0; j < limit; j++) {
-      final prefix = size * j;
+      final prefix = sizeEach * j;
       for (var i = 0, bits = this[j]; bits > 0; bits >>= 1, i++) {
         if (bits & 1 == 1) yield mapping(prefix + i);
       }
     }
 
-    final max = to & size - 1;
-    final prefix = size * limit;
+    final max = to & sizeEach - 1;
+    final prefix = sizeEach * limit;
     for (var i = 0, bits = this[limit]; i <= max; bits >>= 1, i++) {
       if (bits & 1 == 1) yield mapping(prefix + i);
     }
   }
 
   // inclusive
-  Iterable<T> mapPAvailableBetween<T>(
-    int size,
+  Iterable<T> mapPAvailableSub<T>(
+    int sizeEach,
     int? from,
     int? to,
     T Function(int) mapping, [
@@ -445,14 +408,14 @@ extension TypedIntList on TypedDataList<int> {
   ]) sync* {
     if (from == null) {
       if (to == null) {
-        yield* mapPAvailable(size, mapping);
+        yield* mapPAvailable(sizeEach, mapping);
         return;
       }
-      yield* mapPAvailableTo(size, to, mapping, inclusive);
+      yield* mapPAvailableTo(sizeEach, to, mapping, inclusive);
       return;
     }
     if (to == null) {
-      yield* mapPAvailableFrom(size, from, mapping, inclusive);
+      yield* mapPAvailableFrom(sizeEach, from, mapping, inclusive);
       return;
     }
 
@@ -460,11 +423,11 @@ extension TypedIntList on TypedDataList<int> {
     to -= inclusive ? 0 : 1;
     if (from > to) return;
 
-    final limit = to ~/ size;
-    final max = to & size - 1;
-    var j = from ~/ size;
-    var i = from & size - 1;
-    var prefix = size * j;
+    final limit = to ~/ sizeEach;
+    final max = to & sizeEach - 1;
+    var j = from ~/ sizeEach;
+    var i = from & sizeEach - 1;
+    var prefix = sizeEach * j;
 
     // on from && on to
     if (j == limit) {
@@ -482,7 +445,7 @@ extension TypedIntList on TypedDataList<int> {
 
     // after from, before to
     for (; j < limit; j++) {
-      prefix = size * j;
+      prefix = sizeEach * j;
       i = 0;
       for (var bits = this[j]; bits > 0; bits >>= 1, i++) {
         if (bits & 1 == 1) yield mapping(prefix + i);
@@ -490,7 +453,7 @@ extension TypedIntList on TypedDataList<int> {
     }
 
     // on to
-    prefix = size * limit;
+    prefix = sizeEach * limit;
     i = 0;
     for (var bits = this[limit]; i <= max; bits >>= 1, i++) {
       if (bits & 1 == 1) yield mapping(prefix + i);

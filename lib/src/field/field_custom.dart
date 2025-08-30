@@ -26,10 +26,7 @@ class FieldDatesInMonths extends FieldParent
   final (int, int) end;
 
   FieldDatesInMonths(this.begin, this.end)
-    : assert(
-        _isValidYearMonthScope(begin, end),
-        'invalid date $begin ~ $end',
-      ),
+    : assert(_isValidYearMonthScope(begin, end), 'invalid date $begin ~ $end'),
       super(Uint32List(begin.monthsToYearMonth(end.$1, end.$2) + 1));
 
   @override
@@ -127,9 +124,9 @@ class FieldDatesInMonths extends FieldParent
 ///
 abstract class FieldAB extends FieldParent
     with
-        _MSetFieldIndexable<(int, int)>,
         _MBitsField,
         _MFieldContainerPositionAble<(int, int)>,
+        _MSetFieldIndexable<(int, int)>,
         _MSetFieldBits<(int, int)>,
         _MOperatableField<FieldAB> {
   final int aLimit;
@@ -142,8 +139,8 @@ abstract class FieldAB extends FieldParent
     this.bValidate,
     this.bDivision,
     super._field, {
-    this.aLimit = 24,
-    this.bSize = 60,
+    this.aLimit = _hoursADay,
+    this.bSize = _minuteADay,
   }) : assert(
          bSize % bDivision == 0,
          'invalid division: $bDivision for $bSize',
@@ -181,7 +178,11 @@ abstract class FieldAB extends FieldParent
   }
 
   @override
-  void _ranges(void Function(int) consume, (int, int) begin, (int, int)? limit) {
+  void _ranges(
+    void Function(int) consume,
+    (int, int) begin,
+    (int, int)? limit,
+  ) {
     assert(validateIndex(begin));
     assert(limit == null || (validateIndex(limit) && begin < limit));
 

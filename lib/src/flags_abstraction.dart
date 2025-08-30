@@ -62,7 +62,6 @@ abstract class _AFlagsCollapse<S> implements _PFlags {
 
 abstract class _AFlagsEquatable<F> implements _PFlags {
   bool isSizeEqual(F other);
-
 }
 
 abstract class _AFlagsOperatable<F> implements _AFlagsEquatable<F> {
@@ -86,17 +85,17 @@ abstract class _AFlagsSet<T> implements _PFlags {
 
   T? get last;
 
-  // T? flagsFirstAfter(int position);
+  T? firstAfter(T flag);
+
+  T? lastBefore(T flag);
   //
-  // T? flagsLastBefore(int position);
+  // Iterable<T> get availables;
   //
-  // Iterable<T> get flags;
+  // Iterable<T> availablesFrom(T flag, [bool include]);
   //
-  // Iterable<T> flagsFrom(int position, [bool inclusive = true]);
+  // Iterable<T> availablesTo(T flag, [bool include]);
   //
-  // Iterable<T> flagsTo(int position, [bool inclusive = true]);
-  //
-  // Iterable<T> flagsBetween(int pBegin, int pEnd, [bool inclusive = true]);
+  // Iterable<T> availablesSub(T from, T to, [bool includeFrom, bool includeTo]);
 }
 
 ///
@@ -108,13 +107,14 @@ abstract class _AField implements _PFlags {
 
 abstract class _AFieldIdentical implements _PFlags {
   int get _sizeEach;
+
+  int get size;
 }
 
 abstract class _AFieldBits implements _PFlags {
   // int get _shift => math.log(_sizeEach) ~/ math.ln2 - 1;
   int get _shift;
 
-  // int get _mask => ~(1 << _shift);
   int get _mask;
 }
 
@@ -123,17 +123,6 @@ abstract class _AFieldSet<T> implements _AFlagsSet<T> {
 
   void excludesSub(T begin, [T? limit]);
 
-  // T? flagsFirstAfter(int position);
-  //
-  // T? flagsLastBefore(int position);
-  //
-  // Iterable<T> get flags;
-  //
-  // Iterable<T> flagsFrom(int position, [bool inclusive = true]);
-  //
-  // Iterable<T> flagsTo(int position, [bool inclusive = true]);
-  //
-  // Iterable<T> flagsBetween(int pBegin, int pEnd, [bool inclusive = true]);
 }
 
 //
@@ -144,14 +133,15 @@ sealed class FieldParent extends _PFlags implements _AField, _AFieldIdentical {
   const FieldParent(this._field);
 
   @override
+  int get size => _sizeEach * _field.length;
+
+  @override
   void clear() {
     final length = _field.length;
     for (var i = 0; i < length; i++) {
       _field[i] = 0;
     }
   }
-
-  int get size => _sizeEach * _field.length;
 }
 
 ///
@@ -167,6 +157,7 @@ abstract class _ASlotSet<I, T> implements _AFlagsSet<T> {
   void pasteSub(T value, I begin, [I? limit]);
 
   void includesFrom(Iterable<T> iterable, I begin, [bool inclusive]);
+
   void includesTo(Iterable<T> iterable, I limit, [bool inclusive]);
 }
 

@@ -210,7 +210,7 @@ sealed class _PFlags {
                         } *
                         (instance.bDivision + 1) +
                     2,
-              FieldDatesInMonths() => 15 + 32 + 4 + 2,
+              FieldDatesInMonths() => 1 + 12 + 32 + 4 + 1,
               _ => throw UnimplementedError(),
             };
         final _ = switch (flags) {
@@ -292,7 +292,7 @@ sealed class _PFlags {
                   ? null
                   : (j, i) {
                       if (i == spatial1) return;
-                      if (j * spatial1 + pass + i & mask == 0) {
+                      if ((j * spatial1 + pass + i) & mask == 0) {
                         bits = field[l];
                         pass = 0;
                         l++;
@@ -400,14 +400,13 @@ sealed class _PFlags {
             var year = begin.$1, month = begin.$2;
 
             for (var j = 0; j < limit; j++) {
-              buffer.write('|');
-              buffer.write('($year'.padLeft(6));
+              buffer.write('| (');
+              buffer.write('$year'.padLeft(4));
               buffer.write(',');
-              buffer.write('$month)'.padLeft(4));
-              buffer.write(' :');
-              buffer.write(' ');
+              buffer.write('$month'.padLeft(2));
+              buffer.write(') : ');
               buffer.writeBitsOfMonth(field[j], _monthDaysOf(year, month));
-              buffer.writeln(' |');
+              buffer.writeln('|');
               month++;
               if (month > december) {
                 month = 1;
