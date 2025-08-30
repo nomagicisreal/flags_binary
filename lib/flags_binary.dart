@@ -5,9 +5,8 @@ import 'dart:typed_data';
 
 part 'src/_extended/extended.dart';
 part 'src/_extended/extended_impl.dart';
-part 'src/field/field_custom.dart';
 part 'src/field/field.dart';
-part 'src/field/field_impl.dart';
+part 'src/field/field_custom.dart';
 part 'src/slot/slot.dart';
 part 'src/slot/slot_custom.dart';
 part 'src/flags.dart';

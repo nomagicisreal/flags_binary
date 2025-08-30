@@ -14,6 +14,7 @@ part of '../../flags_binary.dart';
 /// [_StringBufferExtension]
 /// [_Record2Int]
 /// [_Record3Int]
+/// [_IterableExtension]
 ///
 ///
 ///
@@ -110,6 +111,15 @@ extension _NullableExtension<T> on T? {
   S? nullOrMap<S>(S Function(T) mapper) {
     if (this == null) return null;
     return mapper(this as T);
+  }
+
+}
+
+extension _NullableIterableExtension<T> on Iterable<T?> {
+  Iterable<T> get filterNotNull sync* {
+    for (var item in this) {
+      if (item != null) yield item;
+    }
   }
 }
 
@@ -353,3 +363,14 @@ extension _Record3Int on (int, int, int) {
   //   return days + day - dayCurrent;
   // }
 }
+
+// extension _IterableExtension<I> on Iterable<I> {
+//   Iterable<T> mapWhere<T>(
+//     bool Function(I item) predicate,
+//     T Function(I mapper) mapping,
+//   ) sync* {
+//     for (var item in this) {
+//       if (predicate(item)) yield mapping(item);
+//     }
+//   }
+// }

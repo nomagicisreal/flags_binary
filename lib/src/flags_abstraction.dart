@@ -2,8 +2,10 @@ part of '../flags_binary.dart';
 
 ///
 ///
+///
 /// prefix 'A' stands for abstraction, with contract
 /// [_AFlagsContainer]
+/// [_AFlagsScoped]
 /// [_AFlagsSpatial1], [_AFlagsSpatial2], [_AFlagsSpatial3], [_AFlagsSpatial4]
 /// [_AFlagsCollapse]
 /// [_AFlagsOperatable]
@@ -12,13 +14,9 @@ part of '../flags_binary.dart';
 /// [_AFlagsSet]
 /// [_AFieldIdentical]
 ///
-/// prefix 'P' stands for parent class, with  (with field)
 /// [FieldParent]
-/// [_PFieldSpatial1]
-/// [_PFieldSpatial2]
-/// [_PFieldSpatial3]
-/// [_PFieldSpatial4]
-/// [_PFieldScoped]
+/// [SlotParent]
+///
 ///
 ///
 
@@ -80,22 +78,22 @@ abstract class _AFlagsOperatable<F> implements _AFlagsEquatable<F> {
   void setXOr(F other);
 }
 
-abstract class _AFlagsSet<T> implements _PFlags {
+abstract class _AFlagsSet<I, T> implements _PFlags {
   T? get first;
 
   T? get last;
 
-  T? firstAfter(T flag);
+  T? firstAfter(I index);
 
-  T? lastBefore(T flag);
-  //
-  // Iterable<T> get availables;
-  //
-  // Iterable<T> availablesFrom(T flag, [bool include]);
-  //
-  // Iterable<T> availablesTo(T flag, [bool include]);
-  //
-  // Iterable<T> availablesSub(T from, T to, [bool includeFrom, bool includeTo]);
+  T? lastBefore(I index);
+
+  Iterable<T> get availables;
+
+  Iterable<T> availablesFrom(I index, [bool inclusive]);
+
+  Iterable<T> availablesTo(I index, [bool inclusive]);
+
+  Iterable<T> availablesSub(I from, I to, [bool includeFrom, bool includeTo]);
 }
 
 ///
@@ -118,11 +116,10 @@ abstract class _AFieldBits implements _PFlags {
   int get _mask;
 }
 
-abstract class _AFieldSet<T> implements _AFlagsSet<T> {
+abstract class _AFieldSet<I, T> implements _AFlagsSet<I, T> {
   void includesSub(T begin, [T? limit]);
 
   void excludesSub(T begin, [T? limit]);
-
 }
 
 //
@@ -151,7 +148,7 @@ abstract class _ASlot<T> implements _PFlags {
   List<T?> get _slot;
 }
 
-abstract class _ASlotSet<I, T> implements _AFlagsSet<T> {
+abstract class _ASlotSet<I, T> implements _AFlagsSet<I, T> {
   Iterable<T> filterOn(FieldParent field);
 
   void pasteSub(T value, I begin, [I? limit]);
@@ -161,6 +158,7 @@ abstract class _ASlotSet<I, T> implements _AFlagsSet<T> {
   void includesTo(Iterable<T> iterable, I limit, [bool inclusive]);
 }
 
+//
 sealed class SlotParent<T> extends _PFlags implements _ASlot<T> {
   @override
   final List<T?> _slot;

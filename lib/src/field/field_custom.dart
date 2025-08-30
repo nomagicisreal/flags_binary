@@ -18,7 +18,7 @@ class FieldDatesInMonths extends FieldParent
         _MBitsFieldMonthsDates,
         _MFieldContainerMonthsDates,
         _MSetFieldMonthsDatesScoped,
-        _MSetFieldBitsMonthsDates,
+        _MSetBitsFieldMonthsDates,
         _MOperatableField<FieldDatesInMonths> {
   @override
   final (int, int) begin;
@@ -127,7 +127,7 @@ abstract class FieldAB extends FieldParent
         _MBitsField,
         _MFieldContainerPositionAble<(int, int)>,
         _MSetFieldIndexable<(int, int)>,
-        _MSetFieldBits<(int, int)>,
+        _MSetBitsField<(int, int)>,
         _MOperatableField<FieldAB> {
   final int aLimit;
   final bool Function(int) bValidate;
@@ -178,19 +178,19 @@ abstract class FieldAB extends FieldParent
   }
 
   @override
-  void _ranges(
+  void _sub(
     void Function(int) consume,
-    (int, int) begin,
+    (int, int) from,
     (int, int)? limit,
   ) {
-    assert(validateIndex(begin));
-    assert(limit == null || (validateIndex(limit) && begin < limit));
+    assert(validateIndex(from));
+    assert(limit == null || (validateIndex(limit) && from < limit));
 
     final division = bDivision;
     final sizeDivision = bSizeDivision;
-    final aBegin = begin.$1 * division;
+    final aBegin = from.$1 * division;
     final aEnd = (limit?.$1 ?? aLimit - 1) * division;
-    var d = begin.$2 ~/ sizeDivision;
+    var d = from.$2 ~/ sizeDivision;
     for (; d < sizeDivision; d++) {
       consume(aBegin + d);
     }

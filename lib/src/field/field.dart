@@ -21,7 +21,7 @@ abstract class Field extends FieldParent
         _MFlagsContainerSpatial1<bool>,
         _MBitsField,
         _MSetField,
-        _MSetFieldBits<int>,
+        _MSetBitsField<int>,
         _MOperatableField<Field> {
   @override
   final int spatial1;
@@ -41,9 +41,10 @@ abstract class Field extends FieldParent
   }
 
   @override
-  void _ranges(void Function(int) consume, int begin, int? limit) {
+  void _sub(void Function(int) consume, int from, int? limit) {
+    assert(validateIndex(from) && (limit == null || validateIndex(limit)));
     final l = limit ?? spatial1;
-    for (var i = begin; i < l; i++) {
+    for (var i = from; i < l; i++) {
       consume(i);
     }
   }
@@ -67,8 +68,8 @@ abstract class Field2D extends FieldParent
         _MFlagsContainerSpatial2<bool>,
         _MBitsField,
         _MFieldContainerPositionAble<(int, int)>,
-        _MSetFieldBits<(int, int)>,
         _MSetFieldIndexable<(int, int)>,
+        _MSetBitsField<(int, int)>,
         _MOperatableField<Field2D>
     implements _AFlagsCollapse<Field> {
   @override
@@ -79,15 +80,16 @@ abstract class Field2D extends FieldParent
   const Field2D._(this.spatial1, this.spatial2, super.field);
 
   @override
-  void _ranges(void Function(int) consume, (int, int) begin, (int, int)? limit) {
-    var i = begin.$2;
-    var j = begin.$1;
+  void _sub(void Function(int) consume, (int, int) from, (int, int)? limit) {
+    assert(validateIndex(from) && (limit == null || validateIndex(limit)));
+    var j = from.$1;
+    var i = from.$2;
     final spatial1 = this.spatial1;
     final iLimit = limit?.$2 ?? spatial1;
     final jEnd = limit?.$1 ?? spatial2;
     assert(j <= jEnd);
 
-    var index = (j - 1) * spatial1 + i;
+    var index = j * spatial1 + i;
 
     // j == jEnd
     if (j == jEnd) {
@@ -118,7 +120,7 @@ abstract class Field2D extends FieldParent
   (int, int) _indexOf(int position) {
     final spatial1 = this.spatial1;
     assert(position.isRangeOpenUpper(0, spatial1 * spatial2));
-    return (position ~/ spatial1 + 1, position % spatial1);
+    return (position ~/ spatial1, position % spatial1);
   }
 
   @override
@@ -153,7 +155,7 @@ abstract class Field3D extends FieldParent
         _MFlagsContainerSpatial3<bool>,
         _MBitsField,
         _MFieldContainerPositionAble<(int, int, int)>,
-        _MSetFieldBits<(int, int, int)>,
+        _MSetBitsField<(int, int, int)>,
         _MSetFieldIndexable<(int, int, int)>,
         _MOperatableField<Field3D>
     implements _AFlagsCollapse<Field2D> {
@@ -167,22 +169,23 @@ abstract class Field3D extends FieldParent
   const Field3D._(this.spatial1, this.spatial2, this.spatial3, super.field);
 
   @override
-  void _ranges(
+  void _sub(
     void Function(int) consume,
-    (int, int, int) begin,
+    (int, int, int) from,
     (int, int, int)? limit,
   ) {
-    var i = begin.$3;
-    var j = begin.$2;
-    var k = begin.$1;
+    assert(validateIndex(from) && (limit == null || validateIndex(limit)));
+    var k = from.$1;
+    var j = from.$2;
+    var i = from.$3;
     final spatial1 = this.spatial1;
     final spatial2 = this.spatial2;
-    final iLimit = limit?.$3 ?? spatial1;
-    final jEnd = limit?.$2 ?? spatial2;
     final kEnd = limit?.$1 ?? spatial3;
+    final jEnd = limit?.$2 ?? spatial2;
+    final iLimit = limit?.$3 ?? spatial1;
     assert(k <= kEnd);
 
-    var index = ((k - 1) * spatial2 + j - 1) * spatial1 + i;
+    var index = (k * spatial2 + j) * spatial1 + i;
 
     // k == kEnd
     if (k == kEnd) {
@@ -247,8 +250,8 @@ abstract class Field3D extends FieldParent
     final spatial1 = this.spatial1;
     final spatial2 = this.spatial2;
     assert(position.isRangeOpenUpper(0, spatial1 * spatial2 * spatial3));
-    final p2 = position ~/ spatial1 + 1;
-    return (p2 ~/ spatial2 + 1, p2 % spatial2, position % spatial1);
+    final p2 = position ~/ spatial1;
+    return (p2 ~/ spatial2, p2 % spatial2, position % spatial1);
   }
 
   @override
@@ -293,7 +296,7 @@ abstract class Field4D extends FieldParent
         _MFlagsContainerSpatial4<bool>,
         _MBitsField,
         _MFieldContainerPositionAble<(int, int, int, int)>,
-        _MSetFieldBits<(int, int, int, int)>,
+        _MSetBitsField<(int, int, int, int)>,
         _MSetFieldIndexable<(int, int, int, int)>,
         _MOperatableField<Field4D>
     implements _AFlagsCollapse<Field3D> {
@@ -315,25 +318,26 @@ abstract class Field4D extends FieldParent
   );
 
   @override
-  void _ranges(
+  void _sub(
     void Function(int) consume,
-    (int, int, int, int) begin,
+    (int, int, int, int) from,
     (int, int, int, int)? limit,
   ) {
-    var i = begin.$4;
-    var j = begin.$3;
-    var k = begin.$2;
-    var l = begin.$1;
+    assert(validateIndex(from) && (limit == null || validateIndex(limit)));
+    var l = from.$1;
+    var k = from.$2;
+    var j = from.$3;
+    var i = from.$4;
     final spatial1 = this.spatial1;
     final spatial2 = this.spatial2;
     final spatial3 = this.spatial3;
-    final iLimit = limit?.$4 ?? spatial1;
-    final jEnd = limit?.$3 ?? spatial2;
-    final kEnd = limit?.$2 ?? spatial3;
     final lEnd = limit?.$1 ?? spatial4;
+    final kEnd = limit?.$2 ?? spatial3;
+    final jEnd = limit?.$3 ?? spatial2;
+    final iLimit = limit?.$4 ?? spatial1;
     assert(l <= lEnd);
 
-    var index = (((l - 1) * spatial3 + k - 1) * spatial2 + j - 1) + i;
+    var index = ((l * spatial3 + k) * spatial2 + j) + i;
 
     // l == lEnd
     if (l == lEnd) {
@@ -450,14 +454,9 @@ abstract class Field4D extends FieldParent
     assert(
       position.isRangeOpenUpper(0, spatial1 * spatial2 * spatial3 * spatial4),
     );
-    final p2 = position ~/ spatial1 + 1;
-    final p3 = p2 ~/ spatial2 + 1;
-    return (
-      p3 ~/ spatial3 + 1,
-      p3 % spatial3,
-      p2 % spatial2,
-      position % spatial1,
-    );
+    final p2 = position ~/ spatial1;
+    final p3 = p2 ~/ spatial2;
+    return (p3 ~/ spatial3, p3 % spatial3, p2 % spatial2, position % spatial1);
   }
 
   @override

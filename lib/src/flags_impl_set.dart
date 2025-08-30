@@ -6,9 +6,9 @@ part of '../flags_binary.dart';
 /// [_MSetField]
 /// [_MSetFieldIndexable]
 /// [_MSetFieldMonthsDatesScoped]
-/// [_MSetFieldBits]
-/// [_MSetFieldBitsMonthsDates]
 /// [_MSetSlot]
+/// [_MSetBitsField]
+/// [_MSetBitsFieldMonthsDates]
 ///
 ///
 ///
@@ -17,7 +17,7 @@ part of '../flags_binary.dart';
 ///
 ///
 mixin _MSetField
-    implements _AFlagsSet<int>, _AField, _AFieldIdentical, _AFieldBits {
+    implements _AFlagsSet<int, int>, _AField, _AFieldIdentical, _AFieldBits {
   @override
   int? get first => _field.pFirst(_sizeEach);
 
@@ -25,24 +25,35 @@ mixin _MSetField
   int? get last => _field.pLast(_sizeEach);
 
   @override
-  int? firstAfter(int flag) =>
-      _field.pFirstFrom(flag >> _shift, flag & _mask, _sizeEach);
+  int? firstAfter(int index) =>
+      _field.pFirstFrom(index >> _shift, index & _mask, _sizeEach);
 
   @override
-  int? lastBefore(int flag) =>
-      _field.pLastTo(flag >> _shift, flag & _mask, _sizeEach);
+  int? lastBefore(int index) =>
+      _field.pLastTo(index >> _shift, index & _mask, _sizeEach);
 
-  // @override
-  // Iterable<int> get availables => _field.pAvailable(_sizeEach);
+  @override
+  Iterable<int> get availables => _field.pAvailable(_sizeEach);
 
-  // @override
-  // Iterable<int> availablesFrom(int flag, [bool include = true]) {
-  //   throw UnimplementedError();
-  // }
+  @override
+  Iterable<int> availablesFrom(int index, [bool inclusive = true]) =>
+      _field.pAvailableFrom(index, _sizeEach, inclusive);
+
+  @override
+  Iterable<int> availablesTo(int index, [bool inclusive = true]) =>
+      _field.pAvailableTo(index, _sizeEach, inclusive);
+
+  @override
+  Iterable<int> availablesSub(
+    int from,
+    int to, [
+    bool includeFrom = true,
+    bool includeTo = true,
+  ]) => _field.pAvailableSub(from, to, _sizeEach, includeFrom, includeTo);
 }
 
 mixin _MSetFieldIndexable<T> on _MFieldContainerPositionAble<T>
-    implements _AField, _AFieldIdentical, _AFlagsSet<T> {
+    implements _AField, _AFieldIdentical, _AFlagsSet<T, T> {
   T _indexOf(int position);
 
   @override
@@ -52,28 +63,47 @@ mixin _MSetFieldIndexable<T> on _MFieldContainerPositionAble<T>
   T? get last => _field.pLast(_sizeEach).nullOrMap(_indexOf);
 
   @override
-  T? firstAfter(T flag) {
-    final field = _field,
-        sizeEach = _sizeEach,
-        p = math.max(_positionOf(flag) + 1, 0);
-    if (p >= field.length * sizeEach) return null;
-    return field
-        .pFirstFrom(p >> _shift, p & _mask, sizeEach)
-        .nullOrMap(_indexOf);
-  }
+  T? firstAfter(T index) => _field
+      .pFirstAfter(_positionOf(index), _shift, _mask, _sizeEach)
+      .nullOrMap(_indexOf);
 
   @override
-  T? lastBefore(T flag) {
-    final field = _field,
-        sizeEach = _sizeEach,
-        p = math.min(_positionOf(flag) - 1, field.length * sizeEach - 1);
-    if (p < 0) return null;
-    return field.pLastTo(p >> _shift, p & _mask, sizeEach).nullOrMap(_indexOf);
-  }
+  T? lastBefore(T index) => _field
+      .pLastBefore(_positionOf(index), _shift, _mask, _sizeEach)
+      .nullOrMap(_indexOf);
+
+  @override
+  Iterable<T> get availables => _field.mapPAvailable(_sizeEach, _indexOf);
+
+  @override
+  Iterable<T> availablesFrom(T index, [bool inclusive = true]) => _field
+      .mapPAvailableFrom(_positionOf(index), _sizeEach, _indexOf, inclusive);
+
+  @override
+  Iterable<T> availablesTo(T index, [bool inclusive = true]) => _field
+      .mapPAvailableTo(_positionOf(index), _sizeEach, _indexOf, inclusive);
+
+  @override
+  Iterable<T> availablesSub(
+    T from,
+    T to, [
+    bool includeFrom = true,
+    bool includeTo = true,
+  ]) => _field.mapPAvailableSub(
+    _positionOf(from),
+    _positionOf(to),
+    _sizeEach,
+    _indexOf,
+    includeFrom,
+    includeTo,
+  );
 }
 
 mixin _MSetFieldMonthsDatesScoped
-    implements _AFlagsSet<(int, int, int)>, _AFlagsScoped<(int, int)>, _AField {
+    implements
+        _AFlagsSet<(int, int, int), (int, int, int)>,
+        _AFlagsScoped<(int, int)>,
+        _AField {
   ///
   /// [_firstMonthIndexedOf], [_lastIndexedMonthOf]
   ///
@@ -130,10 +160,10 @@ mixin _MSetFieldMonthsDatesScoped
   }
 
   @override
-  (int, int, int)? firstAfter((int, int, int) date) {
-    assert(date.isValidDate);
-    final yDate = date.$1,
-        mDate = date.$2,
+  (int, int, int)? firstAfter((int, int, int) index) {
+    assert(index.isValidDate);
+    final yDate = index.$1,
+        mDate = index.$2,
         begin = this.begin,
         field = _field,
         length = field.length;
@@ -152,7 +182,7 @@ mixin _MSetFieldMonthsDatesScoped
       return true;
     }
 
-    final dDate = date.$3;
+    final dDate = index.$3;
     int? d;
     if (dDate == _monthDaysOf(yDate, mDate)) {
       if (!nextMonth()) return null;
@@ -203,10 +233,10 @@ mixin _MSetFieldMonthsDatesScoped
   }
 
   @override
-  (int, int, int)? lastBefore((int, int, int) date) {
-    assert(date.isValidDate);
-    final yDate = date.$1,
-        mDate = date.$2,
+  (int, int, int)? lastBefore((int, int, int) index) {
+    assert(index.isValidDate);
+    final yDate = index.$1,
+        mDate = index.$2,
         begin = this.begin,
         field = _field,
         length = field.length;
@@ -226,7 +256,7 @@ mixin _MSetFieldMonthsDatesScoped
       return true;
     }
 
-    final dDate = date.$3;
+    final dDate = index.$3;
     int? d;
     if (dDate == 1) {
       if (!nextMonth()) return null;
@@ -319,7 +349,7 @@ mixin _MSetFieldMonthsDatesScoped
   /// [_availableDatesInMonth]
   /// [availablesOn]
   ///
-  // @override
+  @override
   Iterable<(int, int, int)> get availables sync* {
     final field = _field, max = field.length - 1;
     var y = begin.$1, m = begin.$2, i = 0;
@@ -386,17 +416,17 @@ mixin _MSetFieldMonthsDatesScoped
   /// [availablesTo]
   /// [availablesSub]
   ///
-  // @override
+  @override
   Iterable<(int, int, int)> availablesFrom(
-    (int, int, int) date, [
+    (int, int, int) index, [
     bool inclusive = true,
   ]) sync* {
     final end = this.end, yEnd = end.$1;
-    var y = date.$1;
+    var y = index.$1;
     if (y > yEnd) return;
 
     const int january = 1;
-    var m = date.$2, d = date.$3, i = 0;
+    var m = index.$2, d = index.$3, i = 0;
     assert(m >= 0 && d >= 0);
     final hasDay = d != 0;
 
@@ -449,8 +479,8 @@ mixin _MSetFieldMonthsDatesScoped
 
     (int, int, int) mapper(int position) => (y, m, position);
     const int december = 12;
-    final mapping = field.bitsMappedOfTo, max = length - 1;
-    yield* mapping(i, _monthDaysOf(y, m), mapper, hasDay ? d : 1);
+    final mapping = field.bitsMappedOfLimit, max = length - 1;
+    yield* mapping(i, _monthDaysOf(y, m) + 1, mapper, hasDay ? d : 1);
     while (true) {
       i++;
       if (i > max) return;
@@ -459,21 +489,21 @@ mixin _MSetFieldMonthsDatesScoped
         y++;
         m = january;
       }
-      yield* mapping(i, _monthDaysOf(y, m), mapper);
+      yield* mapping(i, _monthDaysOf(y, m) + 1, mapper);
     }
   }
 
-  // @override
+  @override
   Iterable<(int, int, int)> availablesTo(
-    (int, int, int) date, [
+    (int, int, int) index, [
     bool inclusive = true,
   ]) sync* {
     final begin = this.begin, yBegin = begin.$1;
-    var y = date.$1;
+    var y = index.$1;
     if (y < yBegin) return;
 
     const int december = 12;
-    var m = date.$2, d = date.$3;
+    var m = index.$2, d = index.$3;
     assert(m >= 0 && d >= 0);
     final hasDay = d != 0;
     var i = 0;
@@ -527,10 +557,10 @@ mixin _MSetFieldMonthsDatesScoped
 
     (int, int, int) mapper(int position) => (y, m, position);
     const int january = 1;
-    final mapping = field.bitsMappedOfTo;
+    final mapping = field.bitsMappedOfLimit;
     yield* hasDay
-        ? mapping(i, d, mapper)
-        : mapping(i, _monthDaysOf(y, m), mapper);
+        ? mapping(i, d + 1, mapper)
+        : mapping(i, _monthDaysOf(y, m) + 1, mapper);
     while (true) {
       i--;
       if (i < 0) return;
@@ -539,11 +569,11 @@ mixin _MSetFieldMonthsDatesScoped
         y--;
         m = december;
       }
-      yield* mapping(i, _monthDaysOf(y, m), mapper);
+      yield* mapping(i, _monthDaysOf(y, m) + 1, mapper);
     }
   }
 
-  // @override
+  @override
   Iterable<(int, int, int)> availablesSub(
     (int, int, int) from,
     (int, int, int) to, [
@@ -561,15 +591,16 @@ mixin _MSetFieldMonthsDatesScoped
 
     //
     (int, int, int) mapper(int position) => (y, m, position);
-    final indexing = begin.monthsToYearMonth, mapping = _field.bitsMappedOfTo;
-    var d = from.$3, dTo = to.$3;
+    final indexing = begin.monthsToYearMonth,
+        mapping = _field.bitsMappedOfLimit;
+    var d = from.$3, dLimit = to.$3;
     if (ySame) {
       assert(m <= mTo);
       if (m == mTo) {
         if (!includeFrom) d++;
-        if (!includeTo) dTo--;
-        assert(d > 0 && dTo <= _monthDaysOf(y, m) && d <= dTo);
-        yield* mapping(indexing(y, m), dTo, mapper, d);
+        if (includeTo) dLimit++;
+        assert(d > 0 && dLimit <= _monthDaysOf(y, m) && d <= dLimit);
+        yield* mapping(indexing(y, m), dLimit, mapper, d);
         return;
       }
     }
@@ -591,26 +622,25 @@ mixin _MSetFieldMonthsDatesScoped
         d = 1;
       }
     }
-    if (!includeTo) {
-      dTo--;
-      if (dTo < 1) {
-        mTo--;
-        if (mTo < january) {
-          yTo--;
-          assert(yTo >= y);
-          if (yTo < yBegin) return;
-          mTo = december;
-        }
-        assert(yTo != y || mTo >= m, 'exclusive to: $to after from: $from');
-        if (yTo == yBegin && mTo < mBegin) return;
-        dTo = _monthDaysOf(yTo, mTo);
+    if (includeTo) {
+      dLimit++;
+    } else if (dLimit == 1) {
+      mTo--;
+      if (mTo < january) {
+        yTo--;
+        assert(yTo >= y);
+        if (yTo < yBegin) return;
+        mTo = december;
       }
+      assert(yTo != y || mTo >= m, 'exclusive to: $to after from: $from');
+      if (yTo == yBegin && mTo < mBegin) return;
+      dLimit = _monthDaysOf(yTo, mTo) + 1;
     }
 
     // first month -> intermediate month -> last month
     final last = indexing(yTo, mTo);
     var i = indexing(y, m);
-    yield* mapping(i, _monthDaysOf(y, m), mapper, d);
+    yield* mapping(i, _monthDaysOf(y, m) + 1, mapper, d);
     while (true) {
       i++;
       m++;
@@ -619,40 +649,10 @@ mixin _MSetFieldMonthsDatesScoped
         m = january;
       }
       if (i == last) break;
-      yield* mapping(i, _monthDaysOf(y, m), mapper);
+      yield* mapping(i, _monthDaysOf(y, m) + 1, mapper);
     }
-    yield* mapping(i, dTo, mapper);
+    yield* mapping(i, dLimit, mapper);
   }
-}
-
-///
-///
-///
-mixin _MSetFieldBits<T> on _MBitsField implements _AFieldSet<T> {
-  @override
-  void includesSub(T begin, [T? limit]) => _ranges(_bitSet, begin, limit);
-
-  @override
-  void excludesSub(T begin, [T? limit]) => _ranges(_bitClear, begin, limit);
-
-  void _ranges(void Function(int) consume, T begin, T? limit);
-}
-
-mixin _MSetFieldBitsMonthsDates on _MBitsFieldMonthsDates
-    implements _AFieldSet<(int, int, int)> {
-  @override
-  void includesSub((int, int, int) begin, [(int, int, int)? limit]) =>
-      _sub(_bitSet, begin, limit);
-
-  @override
-  void excludesSub((int, int, int) begin, [(int, int, int)? limit]) =>
-      _sub(_bitClear, begin, limit);
-
-  void _sub(
-    void Function(int, int, int) consume,
-    (int, int, int) begin,
-    (int, int, int)? limit,
-  );
 }
 
 ///
@@ -671,19 +671,21 @@ mixin _MSetSlot<I, T>
   }
 
   @override
-  T? firstAfter(T flag) {
-    final slot = _slot, max = slot.length - 1;
-    for (var i = 0; i < max; i++) {
-      final s = slot[i];
-      if (s == flag) return slot[i + 1];
+  T? firstAfter(I index) {
+    final slot = _slot, length = slot.length;
+    var p = _positionOf(index);
+    if (p > length - 2) return null;
+    for (p = p < 0 ? 0 : p + 1; p < length; p++) {
+      final s = slot[p];
+      if (s != null) return s;
     }
     return null;
   }
 
   @override
   T? get last {
-    final slot = _slot, length = slot.length;
-    for (var i = length - 1; i > -1; i--) {
+    final slot = _slot;
+    for (var i = slot.length - 1; i > -1; i--) {
       final s = slot[i];
       if (s != null) return s;
     }
@@ -691,15 +693,68 @@ mixin _MSetSlot<I, T>
   }
 
   @override
-  T? lastBefore(T flag) {
-    final slot = _slot, length = slot.length;
-    for (var i = length - 1; i > 0; i--) {
-      final s = slot[i];
-      if (s != null) return slot[i - 1];
+  T? lastBefore(I index) {
+    final slot = _slot, last = slot.length - 1;
+    var p = _positionOf(index);
+    if (p < 2) return null;
+    if (p > last) return slot[last];
+    for (p = p > last ? last : p - 1; p > -1; p--) {
+      final s = slot[p];
+      if (s != null) return s;
     }
     return null;
   }
 
+  @override
+  Iterable<T> get availables => _slot.filterNotNull;
+
+  @override
+  Iterable<T> availablesFrom(I index, [bool inclusive = true]) sync* {
+    final slot = _slot, length = slot.length;
+    var p = inclusive ? _positionOf(index) : _positionOf(index) + 1;
+    if (p > length - 1) return;
+    if (p < 0) p = 0;
+    for (; p < length; p++) {
+      final s = slot[p];
+      if (s != null) yield s;
+    }
+  }
+
+  @override
+  Iterable<T> availablesTo(I index, [bool inclusive = true]) sync* {
+    final slot = _slot, last = slot.length - 1;
+    var p = inclusive ? _positionOf(index) : _positionOf(index) - 1;
+    if (p < 0) return;
+    if (p > last) p = last;
+    for (; p > -1; p--) {
+      final s = slot[p];
+      if (s != null) yield s;
+    }
+  }
+
+  @override
+  Iterable<T> availablesSub(
+    I from,
+    I to, [
+    bool includeFrom = true,
+    bool includeTo = true,
+  ]) sync* {
+    final slot = _slot, length = slot.length, last = length - 1;
+    var p = includeFrom ? _positionOf(from) : _positionOf(from) + 1;
+    if (p > last) return;
+    final pLimit = includeTo ? _positionOf(to) + 1 : _positionOf(to);
+    if (pLimit < 1) return;
+    if (p < 0) p = 0;
+    final limit = pLimit > length ? length : pLimit;
+    for (; p < limit; p++) {
+      final s = slot[p];
+      if (s != null) yield s;
+    }
+  }
+
+  ///
+  ///
+  ///
   @override
   Iterable<T> filterOn(FieldParent field) sync* {
     final slot = _slot;
@@ -751,4 +806,34 @@ mixin _MSetSlot<I, T>
       i++;
     }
   }
+}
+
+///
+///
+///
+mixin _MSetBitsField<T> on _MBitsField implements _AFieldSet<T, T> {
+  @override
+  void includesSub(T begin, [T? limit]) => _sub(_bitSet, begin, limit);
+
+  @override
+  void excludesSub(T begin, [T? limit]) => _sub(_bitClear, begin, limit);
+
+  void _sub(void Function(int) consume, T from, T? limit);
+}
+
+mixin _MSetBitsFieldMonthsDates on _MBitsFieldMonthsDates
+    implements _AFieldSet<(int, int, int), (int, int, int)> {
+  @override
+  void includesSub((int, int, int) begin, [(int, int, int)? limit]) =>
+      _sub(_bitSet, begin, limit);
+
+  @override
+  void excludesSub((int, int, int) begin, [(int, int, int)? limit]) =>
+      _sub(_bitClear, begin, limit);
+
+  void _sub(
+    void Function(int, int, int) consume,
+    (int, int, int) begin,
+    (int, int, int)? limit,
+  );
 }

@@ -105,7 +105,7 @@ extension TypedIntList on TypedDataList<int> {
   ///
   /// [bitsOf]
   /// [bitsMappedOf]
-  /// [bitsMappedOfTo]
+  /// [bitsMappedOfLimit]
   /// [bitsMappedFrom]
   /// [bitsMappedTo]
   ///
@@ -125,15 +125,15 @@ extension TypedIntList on TypedDataList<int> {
     }
   }
 
-  Iterable<T> bitsMappedOfTo<T>(
+  Iterable<T> bitsMappedOfLimit<T>(
     int i,
-    int to,
+    int limit,
     T Function(int) mapping, [
     int from = 1,
   ]) sync* {
     for (
       var bits = this[i] >> from - 1, p = from;
-      bits > 0 || p <= to;
+      p < limit;
       bits >>= 1, p++
     ) {
       if (bits & 1 == 1) yield mapping(p);
@@ -317,11 +317,28 @@ extension TypedIntList on TypedDataList<int> {
   }
 
   ///
+  /// [pFirstAfter]
+  /// [pLastBefore]
+  ///
+  int? pFirstAfter(int p, int shift, int mask, int sizeEach) {
+    if (p > length * sizeEach - 1) return null;
+    p = p < 1 ? 1 : p + 1;
+    return pFirstFrom(p >> shift, p & mask, sizeEach);
+  }
+
+  int? pLastBefore(int p, int shift, int mask, int sizeEach) {
+    if (p < 2) return null;
+    final size = length * sizeEach;
+    p = p > size ? size : p - 1;
+    return pLastTo(p >> shift, p & mask, sizeEach);
+  }
+
+  ///
   ///
   /// [pAvailable], [mapPAvailable]
-  /// [mapPAvailableFrom]
-  /// [mapPAvailableTo]
-  /// [mapPAvailableSub]
+  /// [pAvailableFrom], [mapPAvailableFrom]
+  /// [pAvailableTo], [mapPAvailableTo]
+  /// [pAvailableSub], [mapPAvailableSub]
   /// notice that [sizeEach] must be 2^n, so [sizeEach] - 1 will be [_Field8.mask8], [TypedIntList.mask16], ...
   ///
   ///
@@ -336,6 +353,112 @@ extension TypedIntList on TypedDataList<int> {
     }
   }
 
+  Iterable<int> pAvailableFrom(int from, int sizeEach, bool inclusive) sync* {
+    from += inclusive ? 0 : 1;
+    var j = from ~/ sizeEach;
+    final prefix = sizeEach * j;
+    for (
+      var i = from & sizeEach - 1, bits = this[j] >> i - 1;
+      bits > 0;
+      i++, bits >>= 1
+    ) {
+      if (bits & 1 == 1) yield prefix + i;
+    }
+    j++;
+
+    final length = this.length;
+    for (; j < length; j++) {
+      final prefix = sizeEach * j;
+      for (var i = 0, bits = this[j]; bits > 0; i++, bits >>= 1) {
+        if (bits & 1 == 1) yield prefix + i;
+      }
+    }
+  }
+
+  Iterable<int> pAvailableTo(int to, int sizeEach, bool inclusive) sync* {
+    to -= inclusive ? 0 : 1;
+    if (to < 1) return;
+
+    final limit = to ~/ sizeEach;
+    for (var j = 0; j < limit; j++) {
+      final prefix = sizeEach * j;
+      for (var i = 0, bits = this[j]; bits > 0; bits >>= 1, i++) {
+        if (bits & 1 == 1) yield prefix + i;
+      }
+    }
+
+    final max = to & sizeEach - 1;
+    final prefix = sizeEach * limit;
+    for (var i = 0, bits = this[limit]; i <= max; bits >>= 1, i++) {
+      if (bits & 1 == 1) yield prefix + i;
+    }
+  }
+
+  // inclusive
+  Iterable<int> pAvailableSub(
+    int? from,
+    int? to,
+    int sizeEach,
+    bool includeFrom,
+    bool includeTo,
+  ) sync* {
+    if (from == null) {
+      if (to == null) {
+        yield* pAvailable(sizeEach);
+        return;
+      }
+      yield* pAvailableTo(to, sizeEach, includeFrom);
+      return;
+    }
+    if (to == null) {
+      yield* pAvailableFrom(from, sizeEach, includeTo);
+      return;
+    }
+
+    from += includeFrom ? 0 : 1;
+    to -= includeTo ? 0 : 1;
+    if (from > to) return;
+
+    final limit = to ~/ sizeEach;
+    final max = to & sizeEach - 1;
+    var j = from ~/ sizeEach;
+    var i = from & sizeEach - 1;
+    var start = sizeEach * j;
+
+    // on from && on to
+    if (j == limit) {
+      for (var bits = this[j]; i <= max; bits >>= 1, i++) {
+        if (bits & 1 == 1) yield start + i;
+      }
+      return;
+    }
+
+    // on from
+    for (var bits = this[j] >> i - 1; bits > 0; i++, bits >>= 1) {
+      if (bits & 1 == 1) yield start + i;
+    }
+    j++;
+
+    // after from, before to
+    for (; j < limit; j++) {
+      start = sizeEach * j;
+      i = 0;
+      for (var bits = this[j]; bits > 0; bits >>= 1, i++) {
+        if (bits & 1 == 1) yield start + i;
+      }
+    }
+
+    // on to
+    start = sizeEach * limit;
+    i = 0;
+    for (var bits = this[limit]; i <= max; bits >>= 1, i++) {
+      if (bits & 1 == 1) yield start + i;
+    }
+  }
+
+  ///
+  ///
+  ///
   Iterable<T> mapPAvailable<T>(int sizeEach, T Function(int) mapping) sync* {
     final length = this.length;
     for (var j = 0; j < length; j++) {
@@ -348,11 +471,11 @@ extension TypedIntList on TypedDataList<int> {
   }
 
   Iterable<T> mapPAvailableFrom<T>(
-    int sizeEach,
     int from,
-    T Function(int) mapping, [
-    bool inclusive = true,
-  ]) sync* {
+    int sizeEach,
+    T Function(int) mapping,
+    bool inclusive,
+  ) sync* {
     from += inclusive ? 0 : 1;
     var j = from ~/ sizeEach;
     final prefix = sizeEach * j;
@@ -375,11 +498,11 @@ extension TypedIntList on TypedDataList<int> {
   }
 
   Iterable<T> mapPAvailableTo<T>(
-    int sizeEach,
     int to,
-    T Function(int) mapping, [
-    bool inclusive = true,
-  ]) sync* {
+    int sizeEach,
+    T Function(int) mapping,
+    bool inclusive,
+  ) sync* {
     to -= inclusive ? 0 : 1;
     if (to < 1) return;
 
@@ -400,27 +523,28 @@ extension TypedIntList on TypedDataList<int> {
 
   // inclusive
   Iterable<T> mapPAvailableSub<T>(
-    int sizeEach,
     int? from,
     int? to,
-    T Function(int) mapping, [
-    bool inclusive = true,
-  ]) sync* {
+    int sizeEach,
+    T Function(int) mapping,
+    bool includeFrom,
+    bool includeTo,
+  ) sync* {
     if (from == null) {
       if (to == null) {
         yield* mapPAvailable(sizeEach, mapping);
         return;
       }
-      yield* mapPAvailableTo(sizeEach, to, mapping, inclusive);
+      yield* mapPAvailableTo(to, sizeEach, mapping, includeFrom);
       return;
     }
     if (to == null) {
-      yield* mapPAvailableFrom(sizeEach, from, mapping, inclusive);
+      yield* mapPAvailableFrom(from, sizeEach, mapping, includeTo);
       return;
     }
 
-    from += inclusive ? 0 : 1;
-    to -= inclusive ? 0 : 1;
+    from += includeFrom ? 0 : 1;
+    to -= includeTo ? 0 : 1;
     if (from > to) return;
 
     final limit = to ~/ sizeEach;
