@@ -6,7 +6,7 @@ part of '../flags_binary.dart';
 ///   **[_AFieldContainer] for all [_PFlags] concrete children
 ///   **[_AFieldIdentical]
 ///   **[_AFieldBits]
-///   **[_AFlagsCollapse]
+///   **[_AFlagsOn]
 ///   **[_AFlagsSet]
 ///   **[_AFlagsOperatable]
 ///   |
@@ -101,19 +101,19 @@ sealed class _PFlags {
             if (flags is Slot2D) {
               final s1 = flags.spatial1,
                   s2 = flags.spatial2,
-                  padI = '${s1 - 1}'.length + 1,
-                  padJ = '${s2 - 1}'.length + 1,
+                  padJ = '${s1 - 1}'.length + 1,
+                  padI = '${s2 - 1}'.length + 1,
                   padding = [padJ, padI];
-              padOverallSpace = padI + padJ + 10;
-              writeTitle([s2, s1], padding);
+              padOverallSpace = padJ + padI + 10;
+              writeTitle([s1, s2], padding);
               int start = 0;
-              for (var j = 0; j < s2; j++) {
-                for (var i = 0; i < s1; i++) {
+              for (var j = 0; j < s1; j++) {
+                for (var i = 0; i < s2; i++) {
                   buffer.writeRecord([j, i], padding);
                   buffer.write(' :');
                   buffer.writeln(itemOf(start + i));
                 }
-                start += s1;
+                start += s2;
               }
               return;
             }
@@ -122,21 +122,21 @@ sealed class _PFlags {
               final s1 = flags.spatial1,
                   s2 = flags.spatial2,
                   s3 = flags.spatial3,
-                  padI = '${s1 - 1}'.length + 1,
+                  padK = '${s1 - 1}'.length + 1,
                   padJ = '${s2 - 1}'.length + 1,
-                  padK = '${s3 - 1}'.length + 1,
+                  padI = '${s3 - 1}'.length + 1,
                   padding = [padK, padJ, padI];
-              padOverallSpace = padI + padJ + padK + 11;
-              writeTitle([s3, s2, s1], padding);
+              padOverallSpace = padK + padJ + padI + 11;
+              writeTitle([s1, s2, s3], padding);
               int start = 0;
-              for (var k = 0; k < s3; k++) {
+              for (var k = 0; k < s1; k++) {
                 for (var j = 0; j < s2; j++) {
-                  for (var i = 0; i < s1; i++) {
+                  for (var i = 0; i < s3; i++) {
                     buffer.writeRecord([k, j, i], padding);
                     buffer.write(' :');
                     buffer.writeln(itemOf(start + i));
                   }
-                  start += s1;
+                  start += s3;
                 }
               }
               return;
@@ -147,23 +147,23 @@ sealed class _PFlags {
                   s2 = flags.spatial2,
                   s3 = flags.spatial3,
                   s4 = flags.spatial4,
-                  padL = '${s4 - 1}'.length + 1,
-                  padK = '${s3 - 1}'.length + 1,
-                  padJ = '${s2 - 1}'.length + 1,
-                  padI = '${s1 - 1}'.length + 1,
+                  padL = '${s1 - 1}'.length + 1,
+                  padK = '${s2 - 1}'.length + 1,
+                  padJ = '${s3 - 1}'.length + 1,
+                  padI = '${s4 - 1}'.length + 1,
                   padding = [padL, padK, padJ, padI];
-              padOverallSpace = padI + padJ + padK + padL + 12;
-              writeTitle([s4, s3, s2, s1], padding);
+              padOverallSpace = padL + padK + padJ + padI + 12;
+              writeTitle([s1, s2, s3, s4], padding);
               int start = 0;
-              for (var l = 0; l < s4; l++) {
-                for (var k = 0; k < s3; k++) {
-                  for (var j = 0; j < s2; j++) {
-                    for (var i = 0; i < s1; i++) {
+              for (var l = 0; l < s1; l++) {
+                for (var k = 0; k < s2; k++) {
+                  for (var j = 0; j < s3; j++) {
+                    for (var i = 0; i < s4; i++) {
                       buffer.writeRecord([l, k, j, i], padding);
                       buffer.write(' :');
                       buffer.writeln(itemOf(start + i));
                     }
-                    start += s1;
+                    start += s4;
                   }
                 }
               }

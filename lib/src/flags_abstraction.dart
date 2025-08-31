@@ -7,7 +7,7 @@ part of '../flags_binary.dart';
 /// [_AFlagsContainer]
 /// [_AFlagsScoped]
 /// [_AFlagsSpatial1], [_AFlagsSpatial2], [_AFlagsSpatial3], [_AFlagsSpatial4]
-/// [_AFlagsCollapse]
+/// [_AFlagsOn]
 /// [_AFlagsOperatable]
 /// [_AField]
 /// [_AFieldBits]
@@ -54,8 +54,10 @@ abstract class _AFlagsPositionAble<I> implements _PFlags {
   int _positionOf(I index);
 }
 
-abstract class _AFlagsCollapse<S> implements _PFlags {
-  S collapseOn(int index);
+abstract class _AFlagsOn<F> implements _PFlags {
+  F collapseOn(int index);
+
+  // void includeOn(int index, Iterable<I> position)
 }
 
 abstract class _AFlagsEquatable<F> implements _PFlags {

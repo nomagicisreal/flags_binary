@@ -71,7 +71,7 @@ abstract class Field2D extends FieldParent
         _MSetFieldIndexable<(int, int)>,
         _MSetBitsField<(int, int)>,
         _MOperatableField<Field2D>
-    implements _AFlagsCollapse<Field> {
+    implements _AFlagsOn<Field> {
   @override
   final int spatial1;
   @override
@@ -141,7 +141,7 @@ abstract class Field3D extends FieldParent
         _MSetBitsField<(int, int, int)>,
         _MSetFieldIndexable<(int, int, int)>,
         _MOperatableField<Field3D>
-    implements _AFlagsCollapse<Field2D> {
+    implements _AFlagsOn<Field2D> {
   @override
   final int spatial1;
   @override
@@ -241,7 +241,7 @@ abstract class Field4D extends FieldParent
         _MSetBitsField<(int, int, int, int)>,
         _MSetFieldIndexable<(int, int, int, int)>,
         _MOperatableField<Field4D>
-    implements _AFlagsCollapse<Field3D> {
+    implements _AFlagsOn<Field3D> {
   @override
   final int spatial1;
   @override
