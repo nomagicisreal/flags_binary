@@ -44,8 +44,8 @@ abstract class Field extends FieldParent
   void _sub(void Function(int) consume, int from, int? limit) {
     assert(validateIndex(from) && (limit == null || validateIndex(limit)));
     final l = limit ?? spatial1;
-    for (var i = from; i < l; i++) {
-      consume(i);
+    for (; from < l; from++) {
+      consume(from);
     }
   }
 
@@ -82,57 +82,40 @@ abstract class Field2D extends FieldParent
   @override
   void _sub(void Function(int) consume, (int, int) from, (int, int)? limit) {
     assert(validateIndex(from) && (limit == null || validateIndex(limit)));
-    var j = from.$1;
-    var i = from.$2;
-    final spatial1 = this.spatial1;
-    final iLimit = limit?.$2 ?? spatial1;
-    final jEnd = limit?.$1 ?? spatial2;
-    assert(j <= jEnd);
+    final spatial2 = this.spatial2,
+        end = limit ?? (spatial1 - 1, spatial2 - 1),
+        jEnd = end.$1,
+        iEnd = end.$2;
+    var jFrom = from.$1, iFrom = from.$2, index = jFrom * spatial2 + iFrom;
 
-    var index = j * spatial1 + i;
-
-    // j == jEnd
-    if (j == jEnd) {
-      assert(i < iLimit);
-      for (; i < iLimit; i++, index++) {
-        consume(index);
-      }
-      return;
+    if (jFrom < jEnd) {
+      index = consume.iteratingI(iFrom, spatial2, index);
+      index = consume.iteratingJ(jFrom + 1, jEnd, spatial2, index);
+      iFrom = 0;
     }
 
-    // j < jEnd
-    for (; i < spatial1; i++, index++) {
-      consume(index);
-    }
-    for (j++; j < jEnd; j++) {
-      for (i = 0; i < spatial1; i++, index++) {
-        consume(index);
-      }
-    }
-
-    // j == jEnd
-    for (i = 0; i < iLimit; i++, index++) {
+    for (; iFrom <= iEnd; iFrom++, index++) {
       consume(index);
     }
   }
 
   @override
   (int, int) _indexOf(int position) {
-    final spatial1 = this.spatial1;
+    final spatial2 = this.spatial2;
     assert(position.isRangeOpenUpper(0, spatial1 * spatial2));
-    return (position ~/ spatial1, position % spatial1);
+    return (position ~/ spatial2, position % spatial2);
   }
 
   @override
   Field collapseOn(int index) {
-    assert(index.isRangeOpenUpper(0, spatial2));
-    final spatial1 = this.spatial1;
-    final start = (index - 1) * spatial1;
-    final result = Field(spatial1);
-    for (var i = 0; i < spatial1; i++) {
-      if (_bitOn(start + i)) result._bitSet(i);
+    assert(index.isRangeOpenUpper(0, spatial1));
+    final spatial2 = this.spatial2,
+        start = index * spatial2,
+        field = Field(spatial2);
+    for (var i = 0; i < spatial2; i++) {
+      if (_bitOn(start + i)) field._bitSet(i);
     }
-    return result;
+    return field;
   }
 
   factory Field2D(int width, int height, {bool native = false}) {
@@ -175,100 +158,59 @@ abstract class Field3D extends FieldParent
     (int, int, int)? limit,
   ) {
     assert(validateIndex(from) && (limit == null || validateIndex(limit)));
-    var k = from.$1;
-    var j = from.$2;
-    var i = from.$3;
-    final spatial1 = this.spatial1;
-    final spatial2 = this.spatial2;
-    final kEnd = limit?.$1 ?? spatial3;
-    final jEnd = limit?.$2 ?? spatial2;
-    final iLimit = limit?.$3 ?? spatial1;
-    assert(k <= kEnd);
+    final spatial2 = this.spatial2,
+        spatial3 = this.spatial3,
+        end = limit ?? (spatial1 - 1, spatial2 - 1, spatial3 - 1),
+        kEnd = end.$1,
+        jEnd = end.$2,
+        iEnd = end.$3;
+    var kFrom = from.$1,
+        jFrom = from.$2,
+        iFrom = from.$3,
+        index = (kFrom * spatial2 + jFrom) * spatial3 + iFrom;
 
-    var index = (k * spatial2 + j) * spatial1 + i;
-
-    // k == kEnd
-    if (k == kEnd) {
-      assert(j <= jEnd); // belows is copied from [Field2D]
-
-      // j == jEnd
-      if (j == jEnd) {
-        assert(i < iLimit);
-        for (; i < iLimit; i++, index++) {
-          consume(index);
-        }
-        return;
-      }
-
-      // j < jEnd
-      for (; i < spatial1; i++, index++) {
-        consume(index);
-      }
-      for (j++; j < jEnd; j++) {
-        for (i = 0; i < spatial1; i++, index++) {
-          consume(index);
-        }
-      }
-
-      // j == jEnd
-      for (i = 0; i < iLimit; i++, index++) {
-        consume(index);
-      }
-      return;
+    if (kFrom < kEnd) {
+      index = consume.iteratingI(iFrom, spatial3, index);
+      index = consume.iteratingJ(jFrom + 1, spatial2, spatial3, index);
+      index = consume.iteratingK(kFrom + 1, kEnd, spatial2, spatial3, index);
+      jFrom = 0;
+      iFrom = 0;
     }
 
-    // k < kEnd
-    for (; i < spatial1; i++, index++) {
-      consume(index);
-    }
-    for (j++; j < spatial2; j++) {
-      for (i = 0; i < spatial1; i++, index++) {
-        consume(index);
-      }
-    }
-    for (k++; k < kEnd; k++) {
-      for (j = 0; j < spatial2; j++) {
-        for (i = 0; i < spatial1; i++, index++) {
-          consume(index);
-        }
-      }
+    if (jFrom < jEnd) {
+      index = consume.iteratingI(iFrom, spatial3, index);
+      index = consume.iteratingJ(jFrom + 1, spatial2, spatial3, index);
+      iFrom = 0;
     }
 
-    // k == kEnd
-    for (j = 0; j < jEnd; j++) {
-      for (i = 0; i < spatial1; i++, index++) {
-        consume(index);
-      }
-    }
-    for (i = 0; i < iLimit; i++, index++) {
+    for (; iFrom <= iEnd; iFrom++, index++) {
       consume(index);
     }
   }
 
   @override
   (int, int, int) _indexOf(int position) {
-    final spatial1 = this.spatial1;
-    final spatial2 = this.spatial2;
+    final spatial2 = this.spatial2, spatial3 = this.spatial3;
     assert(position.isRangeOpenUpper(0, spatial1 * spatial2 * spatial3));
-    final p2 = position ~/ spatial1;
-    return (p2 ~/ spatial2, p2 % spatial2, position % spatial1);
+    final p2 = position ~/ spatial3;
+    return (p2 ~/ spatial2, p2 % spatial2, position % spatial3);
   }
 
   @override
   Field2D collapseOn(int index) {
-    assert(index.isRangeOpenUpper(0, spatial3));
-    final spatial2 = this.spatial2;
-    final spatial1 = this.spatial1;
-    final start = (index - 1) * spatial2 * spatial1;
-    final result = Field2D(spatial1, spatial2);
+    assert(index.isRangeOpenUpper(0, spatial1));
+    final spatial2 = this.spatial2,
+        spatial3 = this.spatial3,
+        field = Field2D(spatial2, spatial3),
+        start = index * spatial2 * spatial3;
     for (var j = 0; j < spatial2; j++) {
-      final begin = j * spatial1;
-      for (var i = 0; i < spatial1; i++) {
+      final begin = j * spatial3;
+      for (var i = 0; i < spatial3; i++) {
         final p = begin + i;
-        if (_bitOn(start + p)) result._bitSet(p);
+        if (_bitOn(start + p)) field._bitSet(p);
       }
     }
-    return result;
+    return field;
   }
 
   factory Field3D(int width, int height, int depth, [bool native = false]) {
@@ -324,124 +266,45 @@ abstract class Field4D extends FieldParent
     (int, int, int, int)? limit,
   ) {
     assert(validateIndex(from) && (limit == null || validateIndex(limit)));
-    var l = from.$1;
-    var k = from.$2;
-    var j = from.$3;
-    var i = from.$4;
-    final spatial1 = this.spatial1;
-    final spatial2 = this.spatial2;
-    final spatial3 = this.spatial3;
-    final lEnd = limit?.$1 ?? spatial4;
-    final kEnd = limit?.$2 ?? spatial3;
-    final jEnd = limit?.$3 ?? spatial2;
-    final iLimit = limit?.$4 ?? spatial1;
-    assert(l <= lEnd);
+    final s2 = this.spatial2,
+        s3 = this.spatial3,
+        s4 = this.spatial4,
+        end = limit ?? (spatial1 - 1, s2 - 1, s3 - 1, s4 - 1),
+        lEnd = end.$1,
+        kEnd = end.$2,
+        jEnd = end.$3,
+        iEnd = end.$4;
+    var lFrom = from.$1,
+        kFrom = from.$2,
+        jFrom = from.$3,
+        iFrom = from.$4,
+        index = ((lFrom * s2 + kFrom) * s3 + jFrom) * s4 + iFrom;
 
-    var index = ((l * spatial3 + k) * spatial2 + j) + i;
-
-    // l == lEnd
-    if (l == lEnd) {
-      assert(k <= kEnd); // belows is copied from [_rangeS3From]
-
-      // k == kEnd
-      if (k == kEnd) {
-        assert(j <= jEnd); // belows is copied from [_rangeS2From]
-
-        // j == jEnd
-        if (j == jEnd) {
-          assert(i < iLimit);
-          for (; i < iLimit; i++, index++) {
-            consume(index);
-          }
-          return;
-        }
-
-        // j < jEnd
-        for (; i < spatial1; i++, index++) {
-          consume(index);
-        }
-        for (j++; j < jEnd; j++) {
-          for (i = 0; i < spatial1; i++, index++) {
-            consume(index);
-          }
-        }
-
-        // j == jEnd
-        for (i = 0; i < iLimit; i++, index++) {
-          consume(index);
-        }
-        return;
-      }
-
-      // k < kEnd
-      for (; i < spatial1; i++, index++) {
-        consume(index);
-      }
-      for (j++; j < spatial2; j++) {
-        for (i = 0; i < spatial1; i++, index++) {
-          consume(index);
-        }
-      }
-      for (k++; k < kEnd; k++) {
-        for (j = 0; j < spatial2; j++) {
-          for (i = 0; i < spatial1; i++, index++) {
-            consume(index);
-          }
-        }
-      }
-
-      // k == kEnd
-      for (j = 0; j < jEnd; j++) {
-        for (i = 0; i < spatial1; i++, index++) {
-          consume(index);
-        }
-      }
-      for (i = 0; i < iLimit; i++, index++) {
-        consume(index);
-      }
-      return;
+    if (lFrom < lEnd) {
+      index = consume.iteratingI(iFrom, s4, index);
+      index = consume.iteratingJ(jFrom + 1, s3, s4, index);
+      index = consume.iteratingK(kFrom + 1, s2, s3, s4, index);
+      index = consume.iteratingL(lFrom + 1, lEnd, s2, s3, s4, index);
+      kFrom = 0;
+      jFrom = 0;
+      iFrom = 0;
     }
 
-    // l < lEnd
-    for (; i < spatial1; i++, index++) {
-      consume(index);
-    }
-    for (j++; j < spatial2; j++) {
-      for (i = 0; i < spatial1; i++, index++) {
-        consume(index);
-      }
-    }
-    for (k++; k < spatial3; k++) {
-      for (j = 0; j < spatial2; j++) {
-        for (i = 0; i < spatial1; i++, index++) {
-          consume(index);
-        }
-      }
-    }
-    for (l++; l < lEnd; l++) {
-      for (k = 0; k < spatial3; k++) {
-        for (j = 0; j < spatial2; j++) {
-          for (i = 0; i < spatial1; i++, index++) {
-            consume(index);
-          }
-        }
-      }
+    if (kFrom < kEnd) {
+      index = consume.iteratingI(iFrom, s4, index);
+      index = consume.iteratingJ(jFrom + 1, s3, s4, index);
+      index = consume.iteratingK(kFrom + 1, kEnd, s3, s4, index);
+      jFrom = 0;
+      iFrom = 0;
     }
 
-    // l == lEnd
-    for (k = 0; k < kEnd; k++) {
-      for (j = 0; j < spatial2; j++) {
-        for (i = 0; i < spatial1; i++, index++) {
-          consume(index);
-        }
-      }
+    if (jFrom < jEnd) {
+      index = consume.iteratingI(iFrom, s4, index);
+      index = consume.iteratingJ(jFrom + 1, jEnd, s4, index);
+      iFrom = 0;
     }
-    for (j = 0; j < jEnd; j++) {
-      for (i = 0; i < spatial1; i++, index++) {
-        consume(index);
-      }
-    }
-    for (i = 0; i < iLimit; i++, index++) {
+
+    for (; iFrom <= iEnd; iFrom++, index++) {
       consume(index);
     }
   }

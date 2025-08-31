@@ -14,7 +14,6 @@ part of '../../flags_binary.dart';
 /// [_StringBufferExtension]
 /// [_Record2Int]
 /// [_Record3Int]
-/// [_IterableExtension]
 ///
 ///
 ///
@@ -112,7 +111,6 @@ extension _NullableExtension<T> on T? {
     if (this == null) return null;
     return mapper(this as T);
   }
-
 }
 
 extension _NullableIterableExtension<T> on Iterable<T?> {
@@ -374,3 +372,52 @@ extension _Record3Int on (int, int, int) {
 //     }
 //   }
 // }
+
+extension _ConsumeIntAllExtension on void Function(int) {
+  int iteratingI(int from, int limit, int arg) {
+    for (var i = from; i < limit; i++, arg++) {
+      this(arg);
+    }
+    return arg;
+  }
+
+  int iteratingJ(int from, int limit, int limitI, int arg) {
+    for (var j = from; j < limit; j++) {
+      for (var i = 0; i < limitI; i++, arg++) {
+        this(arg);
+      }
+    }
+    return arg;
+  }
+
+  int iteratingK(int from, int limit, int limitJ, int limitI, int arg) {
+    for (var k = from; k < limit; k++) {
+      for (var j = 0; j < limitJ; j++) {
+        for (var i = 0; i < limitI; i++, arg++) {
+          this(arg);
+        }
+      }
+    }
+    return arg;
+  }
+
+  int iteratingL(
+    int from,
+    int limit,
+    int limitK,
+    int limitJ,
+    int limitI,
+    int arg,
+  ) {
+    for (var l = from; l < limit; l++) {
+      for (var k = 0; k < limitK; k++) {
+        for (var j = 0; j < limitJ; j++) {
+          for (var i = 0; i < limitI; i++, arg++) {
+            this(arg);
+          }
+        }
+      }
+    }
+    return arg;
+  }
+}

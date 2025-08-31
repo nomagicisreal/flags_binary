@@ -4,7 +4,7 @@ import 'package:flags_binary/flags_binary.dart';
 void main() {
   final field = Field2D(10, 6);
   field.includesSub((0, 1), (1, 2));
-  print(field.toString());
+  print(field.availablesTo((0, 5)));
 
   // final field = FieldDatesInMonths((2025, 7), (2025, 12));
   // field.includesSub((2025, 8, 10), (2025, 9, 20));

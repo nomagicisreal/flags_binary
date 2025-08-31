@@ -14,12 +14,9 @@ part of '../flags_binary.dart';
 ///
 /// [_MBitsField]
 /// [_MBitsFieldMonthsDates]
-/// [_MBitsFlagsField]
-///
 /// [_MFieldContainerPositionAble]
 /// [_MFieldContainerMonthsDates]
 /// [_MSlotContainerPositionAble]
-///
 ///
 /// [_MOperatableField]
 /// [_MEquatableSlot]
@@ -98,13 +95,13 @@ mixin _MFlagsContainerSpatial2<T>
         _AFlagsPositionAble<(int, int)> {
   @override
   bool validateIndex((int, int) index) =>
-      index.$1.isRangeOpenUpper(0, spatial2) &&
-      index.$2.isRangeOpenUpper(0, spatial1);
+      index.$1.isRangeOpenUpper(0, spatial1) &&
+      index.$2.isRangeOpenUpper(0, spatial2);
 
   @override
   int _positionOf((int, int) index) {
     assert(validateIndex(index));
-    return (index.$1 - 1) * spatial1 + index.$2;
+    return index.$1 * spatial2 + index.$2;
   }
 }
 
@@ -115,14 +112,14 @@ mixin _MFlagsContainerSpatial3<T>
         _AFlagsPositionAble<(int, int, int)> {
   @override
   bool validateIndex((int, int, int) index) =>
-      index.$1.isRangeOpenUpper(0, spatial3) &&
+      index.$1.isRangeOpenUpper(0, spatial1) &&
       index.$2.isRangeOpenUpper(0, spatial2) &&
-      index.$3.isRangeOpenUpper(0, spatial1);
+      index.$3.isRangeOpenUpper(0, spatial3);
 
   @override
   int _positionOf((int, int, int) index) {
     assert(validateIndex(index));
-    return ((index.$1 - 1) * spatial2 + index.$2 - 1) * spatial1 + index.$3;
+    return (index.$1 * spatial2 + index.$2) * spatial3 + index.$3;
   }
 }
 
@@ -133,18 +130,15 @@ mixin _MFlagsContainerSpatial4<T>
         _AFlagsPositionAble<(int, int, int, int)> {
   @override
   bool validateIndex((int, int, int, int) index) =>
-      index.$1.isRangeOpenUpper(0, spatial4) &&
-      index.$2.isRangeOpenUpper(0, spatial3) &&
-      index.$3.isRangeOpenUpper(0, spatial2) &&
-      index.$4.isRangeOpenUpper(0, spatial1);
+      index.$1.isRangeOpenUpper(0, spatial1) &&
+      index.$2.isRangeOpenUpper(0, spatial2) &&
+      index.$3.isRangeOpenUpper(0, spatial3) &&
+      index.$4.isRangeOpenUpper(0, spatial4);
 
   @override
   int _positionOf((int, int, int, int) index) {
     assert(validateIndex(index));
-    return (((index.$1 - 1) * spatial3 + index.$2 - 1) * spatial2 +
-                index.$3 -
-                1) *
-            spatial1 +
+    return ((index.$1 * spatial2 + index.$2) * spatial3 + index.$3) * spatial4 +
         index.$4;
   }
 }
