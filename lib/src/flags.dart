@@ -188,16 +188,31 @@ sealed class _PFlags {
               SlotParent() => 0,
               Field() =>
                 3 +
-                    '${instance.spatial1}'.length * 2 +
+                    '${instance.spatial1 - 1}'.length * 2 +
                     4 +
                     (instance._sizeEach + 3 >> 2) * 5 +
                     2,
-              _AFlagsSpatial2() => // Field2D() || Field3D() || Field4D()
+              Field2D() =>
                 2 +
-                    '${instance.spatial2}'.length +
+                    '${instance.spatial1 - 1}'.length +
                     2 +
-                    instance.spatial1 +
-                    (instance.spatial1 + 3 >> 2) +
+                    instance.spatial2 +
+                    (instance.spatial2 + 3 >> 2) +
+                    2,
+              Field3D() =>
+                2 +
+                    '${instance.spatial2 - 1}'.length +
+                    2 +
+                    instance.spatial3 +
+                    (instance.spatial3 + 3 >> 2) +
+                    2,
+
+              Field4D() =>
+                2 +
+                    '${instance.spatial3 - 1}'.length +
+                    2 +
+                    instance.spatial4 +
+                    (instance.spatial4 + 3 >> 2) +
                     2,
               FieldAB() =>
                 3 +
@@ -213,6 +228,9 @@ sealed class _PFlags {
               FieldDatesInMonths() => 1 + 12 + 32 + 4 + 1,
               _ => throw UnimplementedError(),
             };
+        buffer.writeRepeat(borderLength, '-');
+        buffer.writeln();
+
         final _ = switch (flags) {
           Field() || Field2D() || Field3D() || Field4D() => () {
             if (flags is Field) {
@@ -267,9 +285,9 @@ sealed class _PFlags {
               int l = 0,
               int pass = 0,
             ]) {
-              final pad = '${spatial2 - 1}'.length + 1,
-                  limit = spatial1 >> 2,
-                  padAfterBits = 5 - (spatial1 & 3) + 1;
+              final pad = '${spatial1 - 1}'.length + 1,
+                  limit = spatial2 - 1 >> 2,
+                  padAfterBits = 1 + (spatial2 & 3) + 1;
 
               buffer.write('|'.padRight(pad + 3));
               var chunk = 0;
@@ -286,29 +304,29 @@ sealed class _PFlags {
               buffer.write(' v'.padRight(padAfterBits));
               buffer.writeln('|');
 
-              var bits = field[l] >> pass;
-              l++;
-              final nextField = field.length == 1
-                  ? null
-                  : (j, i) {
-                      if (i == spatial1) return;
-                      if ((j * spatial1 + pass + i) & mask == 0) {
-                        bits = field[l];
-                        pass = 0;
-                        l++;
-                      }
-                    };
-              for (var j = 0; j < spatial2; j++) {
+              var bits = field[l];
+              if (l != 0) {
+                bits >> pass;
+                l = 1;
+              }
+              final findNext = field.length > 1;
+              for (var j = 0; j < spatial1; j++) {
                 buffer.write('|');
                 buffer.write('$j'.padLeft(pad));
                 buffer.write(' :');
                 var i = 0;
-                while (i < spatial1) {
+                while (i < spatial2) {
                   if (i % 4 == 0) buffer.write(' ');
                   buffer.writeBit(bits);
                   bits >>= 1;
                   i++;
-                  nextField?.call(j, i);
+                  if (findNext) {
+                    if ((j * spatial2 + pass + i) & mask == 0) {
+                      bits = field[l];
+                      pass = 0;
+                      l++;
+                    }
+                  }
                 }
                 buffer.writeln(' |');
               }
@@ -328,17 +346,17 @@ sealed class _PFlags {
               int spatial3,
               int mask,
             ) {
-              final space = spatial1 * spatial2;
-              for (var k = 0; k < spatial3; k++) {
+              final space = spatial2 * spatial3;
+              for (var k = 0; k < spatial1; k++) {
                 final start = k * space;
                 fieldFlags2(
-                  spatial1,
                   spatial2,
+                  spatial3,
                   mask,
                   start ~/ sizeEach,
                   start % sizeEach,
                 );
-                if (k < spatial3 - 1) {
+                if (k < spatial1 - 1) {
                   buffer.write('\\');
                   buffer.write('${k + 1}/'.padLeft(borderLength - 1, '-'));
                   buffer.writeln();

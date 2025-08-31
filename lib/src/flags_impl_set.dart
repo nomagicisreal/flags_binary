@@ -9,6 +9,10 @@ part of '../flags_binary.dart';
 /// [_MSetSlot]
 /// [_MSetBitsField]
 /// [_MSetBitsFieldMonthsDates]
+/// [_MSetBitsFieldSpatial1]
+/// [_MSetBitsFieldSpatial2]
+/// [_MSetBitsFieldSpatial3]
+/// [_MSetBitsFieldSpatial4]
 ///
 ///
 ///
@@ -97,562 +101,6 @@ mixin _MSetFieldIndexable<T> on _MFieldContainerPositionAble<T>
     includeFrom,
     includeTo,
   );
-}
-
-mixin _MSetFieldMonthsDatesScoped
-    implements
-        _AFlagsSet<(int, int, int), (int, int, int)>,
-        _AFlagsScoped<(int, int)>,
-        _AField {
-  ///
-  /// [_firstMonthIndexedOf], [_lastIndexedMonthOf]
-  ///
-  (int, int)? _firstMonthIndexedOf(int year) {
-    final begin = this.begin, yBegin = begin.$1;
-    if (year < yBegin || year > end.$1) return null;
-    if (year == yBegin) return (begin.$2, 0);
-    return (1, begin.monthsToYearMonth(year, 1));
-  }
-
-  (int, int)? _lastIndexedMonthOf(int year) {
-    final end = this.end, begin = this.begin, yEnd = end.$1;
-    if (year < begin.$1 || year > yEnd) return null;
-    if (year == yEnd) return (end.$2, _field.length - 1);
-    return (12, begin.monthsToYearMonth(year, 12));
-  }
-
-  ///
-  /// [firstInMonth]
-  /// [lastInMonth]
-  ///
-  int? firstInMonth(int year, int month) {
-    assert(_isValidMonth(month));
-    final field = _field, i = begin.monthsToYearMonth(year, month);
-    return i < 0 || i >= field.length ? null : field.bFirstOf(i);
-  }
-
-  int? lastInMonth(int year, int month) {
-    assert(_isValidMonth(month));
-    final field = _field, i = begin.monthsToYearMonth(year, month);
-    return i < 0 || i >= field.length
-        ? null
-        : field.bLastOf(i, _monthDaysOf(year, month));
-  }
-
-  ///
-  /// [first]
-  /// [firstAfter]
-  /// [firstInYear]
-  ///
-  @override
-  (int, int, int)? get first {
-    final begin = this.begin, field = _field, length = field.length;
-    for (var y = begin.$1, m = begin.$2, i = 0; i < length; i++) {
-      final d = field.bFirstOf(i);
-      if (d != null) return (y, m, d);
-      m++;
-      if (m > 12) {
-        m = 1;
-        y++;
-      }
-    }
-    return null;
-  }
-
-  @override
-  (int, int, int)? firstAfter((int, int, int) index) {
-    assert(index.isValidDate);
-    final yDate = index.$1,
-        mDate = index.$2,
-        begin = this.begin,
-        field = _field,
-        length = field.length;
-    var i = begin.monthsToYearMonth(yDate, mDate);
-    if (i < 0 || i >= length) return null;
-
-    var y = begin.$1, m = begin.$2;
-    bool nextMonth() {
-      i++;
-      if (i >= length) return false;
-      m++;
-      if (m > 12) {
-        y++;
-        m = 1;
-      }
-      return true;
-    }
-
-    final dDate = index.$3;
-    int? d;
-    if (dDate == _monthDaysOf(yDate, mDate)) {
-      if (!nextMonth()) return null;
-      d = field.bFirstOf(i);
-    } else {
-      d = field.bFirstOf(i, dDate + 1);
-    }
-    if (d != null) return (y, m, d);
-    if (!nextMonth()) return null;
-    do {
-      d = field.bFirstOf(i);
-      if (d != null) return (y, m, d);
-    } while (nextMonth());
-    return null;
-  }
-
-  (int, int, int)? firstInYear(int year) {
-    final mi = _firstMonthIndexedOf(year);
-    if (mi == null) return null;
-    final field = _field,
-        end = this.end,
-        mLimit = year == end.$1 ? end.$2 + 1 : 13;
-    for (var m = mi.$1, i = mi.$2; m < mLimit; m++, i++) {
-      final d = field.bFirstOf(i);
-      if (d != null) return (year, m, d);
-    }
-    return null;
-  }
-
-  ///
-  /// [last]
-  /// [lastBefore]
-  /// [lastInYear]
-  ///
-  @override
-  (int, int, int)? get last {
-    final end = this.end, field = _field, daysOf = _monthDaysOf;
-    for (var y = end.$1, m = end.$2, i = field.length - 1; i > -1; i--) {
-      final d = field.bLastOf(i, daysOf(y, m));
-      if (d != null) return (y, m, d);
-      m--;
-      if (m < 1) {
-        y--;
-        m = 12;
-      }
-    }
-    return null;
-  }
-
-  @override
-  (int, int, int)? lastBefore((int, int, int) index) {
-    assert(index.isValidDate);
-    final yDate = index.$1,
-        mDate = index.$2,
-        begin = this.begin,
-        field = _field,
-        length = field.length;
-    var i = begin.monthsToYearMonth(yDate, mDate);
-    if (i < 0 || i >= length) return null;
-
-    final end = this.end;
-    var y = end.$1, m = end.$2;
-    bool nextMonth() {
-      i--;
-      if (i < 0) return false;
-      m--;
-      if (m < 0) {
-        y--;
-        m = 12;
-      }
-      return true;
-    }
-
-    final dDate = index.$3;
-    int? d;
-    if (dDate == 1) {
-      if (!nextMonth()) return null;
-      d = field.bLastOf(i, _monthDaysOf(yDate, mDate));
-    } else {
-      d = field.bLastOf(i, dDate - 1);
-    }
-    if (d != null) return (y, m, d);
-    if (!nextMonth()) return null;
-    do {
-      d = field.bLastOf(i, _monthDaysOf(y, m));
-      if (d != null) return (y, m, d);
-    } while (nextMonth());
-    return null;
-  }
-
-  (int, int, int)? lastInYear(int year) {
-    final mi = _lastIndexedMonthOf(year);
-    if (mi == null) return null;
-    final field = _field, mLimit = year == begin.$1 ? begin.$2 - 1 : 0;
-    for (var m = mi.$1, i = mi.$2; m > mLimit; m--, i++) {
-      final d = field.bLastOf(i, _monthDaysOf(year, m));
-      if (d != null) return (year, m, d);
-    }
-    return null;
-  }
-
-  ///
-  /// [availableYears]
-  ///
-  Iterable<int> get availableYears sync* {
-    final begin = this.begin, field = _field, max = field.length - 1;
-    var y = begin.$1, m = begin.$2, i = 0;
-
-    while (true) {
-      if (field.bFirstOf(i) != null) {
-        yield y;
-        i += 13 - m;
-        if (i > max) return;
-        y++;
-        m = 1;
-        continue;
-      }
-      i++;
-      if (i > max) return;
-      m++;
-      if (m > 12) {
-        y++;
-        m = 1;
-      }
-    }
-  }
-
-  ///
-  /// [_availableMonths]
-  /// [_availableMonthsIn]
-  /// [availableMonths]
-  ///
-  Iterable<(int, int)> get _availableMonths sync* {
-    final begin = this.begin, field = _field, max = field.length - 1;
-    var y = begin.$1, m = begin.$2, i = 0;
-    while (true) {
-      if (field.bFirstOf(i) != null) yield (y, m);
-      i++;
-      if (i > max) return;
-      m++;
-      if (m > 12) {
-        y++;
-        m = 1;
-      }
-    }
-  }
-
-  Iterable<(int, int)> _availableMonthsIn(int year) sync* {
-    final field = _field, mi = _firstMonthIndexedOf(year);
-    if (mi == null) return;
-    final mLimit = year == end.$1 ? end.$2 + 1 : 13;
-    for (var m = mi.$1, i = mi.$2; m < mLimit; m++, i++) {
-      if (field.bFirstOf(i) != null) yield (year, m);
-    }
-  }
-
-  Iterable<(int, int)> availableMonths([int? year]) =>
-      year == null ? _availableMonths : _availableMonthsIn(year);
-
-  ///
-  /// [availables]
-  /// [_availableDatesInYearMonth]
-  /// [_availableDatesInYear]
-  /// [_availableDatesInMonth]
-  /// [availablesOn]
-  ///
-  @override
-  Iterable<(int, int, int)> get availables sync* {
-    final field = _field, max = field.length - 1;
-    var y = begin.$1, m = begin.$2, i = 0;
-    while (true) {
-      yield* field.bitsMappedOf(i, (d) => (y, m, d));
-      i++;
-      if (i > max) return;
-      m++;
-      if (m > 12) {
-        y++;
-        m = 1;
-      }
-    }
-  }
-
-  Iterable<(int, int, int)> _availableDatesInYearMonth(
-    int year,
-    int month,
-  ) sync* {
-    assert(_isValidMonth(month));
-    final field = _field, i = begin.monthsToYearMonth(year, month);
-    if (i < 0 || i >= field.length) return;
-    yield* field.bitsMappedOf(i, (d) => (year, month, d));
-  }
-
-  Iterable<(int, int, int)> _availableDatesInYear(int year) sync* {
-    final mi = _firstMonthIndexedOf(year);
-    if (mi == null) return;
-    final field = _field, mLimit = year == end.$1 ? end.$2 + 1 : 13;
-    for (var m = mi.$1, i = mi.$2; m < mLimit; m++, i++) {
-      yield* field.bitsMappedOf(i, (d) => (year, m, d));
-    }
-  }
-
-  Iterable<(int, int, int)> _availableDatesInMonth(int month) sync* {
-    assert(_isValidMonth(month));
-    final field = _field, yBegin = begin.$1, yEnd = end.$1;
-    if (yBegin == yEnd) {
-      assert(month >= begin.$2 && month <= end.$2);
-      yield* field.bitsMappedOf(month - begin.$2, (d) => (yBegin, month, d));
-      return;
-    }
-    var y = yBegin, i = month - begin.$2;
-    if (i < 0) {
-      y++;
-      i += 12;
-    }
-    for (final length = field.length; i < length; y++, i += 12) {
-      yield* field.bitsMappedOf(i, (d) => (y, month, d));
-    }
-  }
-
-  Iterable<(int, int, int)> availablesOn([int? year, int? month]) =>
-      year == null
-      ? month == null
-            ? availables
-            : _availableDatesInMonth(month)
-      : month == null
-      ? _availableDatesInYear(year)
-      : _availableDatesInYearMonth(year, month);
-
-  ///
-  /// [availablesFrom]
-  /// [availablesTo]
-  /// [availablesSub]
-  ///
-  @override
-  Iterable<(int, int, int)> availablesFrom(
-    (int, int, int) index, [
-    bool inclusive = true,
-  ]) sync* {
-    final end = this.end, yEnd = end.$1;
-    var y = index.$1;
-    if (y > yEnd) return;
-
-    const int january = 1;
-    var m = index.$2, d = index.$3, i = 0;
-    assert(m >= 0 && d >= 0);
-    final hasDay = d != 0;
-
-    // dates to year
-    if (m == 0) {
-      assert(!hasDay);
-      if (!inclusive) y++;
-      m = january;
-    } else {
-      const int december = 12;
-      assert(_isValidMonth(m));
-
-      // dates to date
-      if (hasDay) {
-        assert(_isValidDay(y, m, d));
-        if (!inclusive) {
-          d++;
-          if (d > _monthDaysOf(y, m)) {
-            i++;
-            m++;
-            if (m > december) {
-              y++;
-              m = january;
-            }
-            d = 1;
-          }
-        }
-
-        // dates to year month
-      } else {
-        if (!inclusive) {
-          i++;
-          m++;
-          if (m > december) {
-            y++;
-            m = january;
-          }
-        }
-      }
-    }
-
-    //
-    i += begin.monthsToYearMonth(y, m);
-    final field = _field, length = field.length;
-    if (i >= length) return;
-    if (i < 0) {
-      yield* availables;
-      return;
-    }
-
-    (int, int, int) mapper(int position) => (y, m, position);
-    const int december = 12;
-    final mapping = field.bitsMappedOfLimit, max = length - 1;
-    yield* mapping(i, _monthDaysOf(y, m) + 1, mapper, hasDay ? d : 1);
-    while (true) {
-      i++;
-      if (i > max) return;
-      m++;
-      if (m > december) {
-        y++;
-        m = january;
-      }
-      yield* mapping(i, _monthDaysOf(y, m) + 1, mapper);
-    }
-  }
-
-  @override
-  Iterable<(int, int, int)> availablesTo(
-    (int, int, int) index, [
-    bool inclusive = true,
-  ]) sync* {
-    final begin = this.begin, yBegin = begin.$1;
-    var y = index.$1;
-    if (y < yBegin) return;
-
-    const int december = 12;
-    var m = index.$2, d = index.$3;
-    assert(m >= 0 && d >= 0);
-    final hasDay = d != 0;
-    var i = 0;
-
-    // dates to year
-    if (m == 0) {
-      assert(!hasDay);
-      if (!inclusive) y--;
-      m = december;
-    } else {
-      const int january = 1;
-      assert(_isValidMonth(m));
-
-      // dates to date
-      if (hasDay) {
-        assert(_isValidDay(y, m, d));
-        if (!inclusive) {
-          d--;
-          if (d < 1) {
-            i--;
-            m--;
-            if (m < january) {
-              y--;
-              m = december;
-            }
-            d = _monthDaysOf(y, m);
-          }
-        }
-
-        // dates to year month
-      } else {
-        if (!inclusive) {
-          i--;
-          m--;
-          if (m < january) {
-            y--;
-            m = december;
-          }
-        }
-      }
-    }
-
-    //
-    i += begin.monthsToYearMonth(y, m);
-    if (i < 0) return;
-    final field = _field;
-    if (i >= field.length) {
-      yield* availables;
-      return;
-    }
-
-    (int, int, int) mapper(int position) => (y, m, position);
-    const int january = 1;
-    final mapping = field.bitsMappedOfLimit;
-    yield* hasDay
-        ? mapping(i, d + 1, mapper)
-        : mapping(i, _monthDaysOf(y, m) + 1, mapper);
-    while (true) {
-      i--;
-      if (i < 0) return;
-      m--;
-      if (m < january) {
-        y--;
-        m = december;
-      }
-      yield* mapping(i, _monthDaysOf(y, m) + 1, mapper);
-    }
-  }
-
-  @override
-  Iterable<(int, int, int)> availablesSub(
-    (int, int, int) from,
-    (int, int, int) to, [
-    bool includeFrom = true,
-    bool includeTo = true,
-  ]) sync* {
-    final begin = this.begin, end = this.end, yBegin = begin.$1, yEnd = end.$1;
-    var y = from.$1, yTo = to.$1;
-    assert(_isValidDate(from) && _isValidDate(to) && y <= yTo);
-    if (y > yEnd || yTo < yBegin) return;
-
-    final ySame = y == yTo, mBegin = end.$1, mEnd = end.$2;
-    var m = from.$2, mTo = to.$2;
-    if (ySame && yBegin == yEnd && (m > mEnd || mTo > mBegin)) return;
-
-    //
-    (int, int, int) mapper(int position) => (y, m, position);
-    final indexing = begin.monthsToYearMonth,
-        mapping = _field.bitsMappedOfLimit;
-    var d = from.$3, dLimit = to.$3;
-    if (ySame) {
-      assert(m <= mTo);
-      if (m == mTo) {
-        if (!includeFrom) d++;
-        if (includeTo) dLimit++;
-        assert(d > 0 && dLimit <= _monthDaysOf(y, m) && d <= dLimit);
-        yield* mapping(indexing(y, m), dLimit, mapper, d);
-        return;
-      }
-    }
-
-    //
-    const int january = 1, december = 12;
-    if (!includeFrom) {
-      d++;
-      if (d > _monthDaysOf(y, m)) {
-        m++;
-        if (m > december) {
-          y++;
-          assert(y <= yTo);
-          if (y > yEnd) return;
-          m = january;
-        }
-        assert(y != yTo || m <= mTo, 'exclusive from $from after to: $to');
-        if (y == yEnd && m > mEnd) return;
-        d = 1;
-      }
-    }
-    if (includeTo) {
-      dLimit++;
-    } else if (dLimit == 1) {
-      mTo--;
-      if (mTo < january) {
-        yTo--;
-        assert(yTo >= y);
-        if (yTo < yBegin) return;
-        mTo = december;
-      }
-      assert(yTo != y || mTo >= m, 'exclusive to: $to after from: $from');
-      if (yTo == yBegin && mTo < mBegin) return;
-      dLimit = _monthDaysOf(yTo, mTo) + 1;
-    }
-
-    // first month -> intermediate month -> last month
-    final last = indexing(yTo, mTo);
-    var i = indexing(y, m);
-    yield* mapping(i, _monthDaysOf(y, m) + 1, mapper, d);
-    while (true) {
-      i++;
-      m++;
-      if (m > december) {
-        y++;
-        m = january;
-      }
-      if (i == last) break;
-      yield* mapping(i, _monthDaysOf(y, m) + 1, mapper);
-    }
-    yield* mapping(i, dLimit, mapper);
-  }
 }
 
 ///
@@ -821,19 +269,135 @@ mixin _MSetBitsField<T> on _MBitsField implements _AFieldSet<T, T> {
   void _sub(void Function(int) consume, T from, T? limit);
 }
 
-mixin _MSetBitsFieldMonthsDates on _MBitsFieldMonthsDates
-    implements _AFieldSet<(int, int, int), (int, int, int)> {
+///
+///
+///
+mixin _MSetBitsFieldSpatial1
+    implements _MFlagsContainerSpatial1<bool>, _MSetBitsField<int> {
   @override
-  void includesSub((int, int, int) begin, [(int, int, int)? limit]) =>
-      _sub(_bitSet, begin, limit);
+  void _sub(void Function(int) consume, int from, int? limit) {
+    assert(validateIndex(from) && (limit == null || validateIndex(limit)));
+    final l = limit ?? spatial1;
+    for (; from < l; from++) {
+      consume(from);
+    }
+  }
+}
 
+mixin _MSetBitsFieldSpatial2
+    implements _MFlagsContainerSpatial2<bool>, _MSetBitsField<(int, int)> {
   @override
-  void excludesSub((int, int, int) begin, [(int, int, int)? limit]) =>
-      _sub(_bitClear, begin, limit);
+  void _sub(void Function(int) consume, (int, int) from, (int, int)? limit) {
+    assert(validateIndex(from) && (limit == null || validateIndex(limit)));
+    final spatial2 = this.spatial2,
+        end = limit ?? (spatial1 - 1, spatial2 - 1),
+        jEnd = end.$1,
+        iEnd = end.$2;
+    var jFrom = from.$1, iFrom = from.$2, index = jFrom * spatial2 + iFrom;
 
+    if (jFrom < jEnd) {
+      index = consume.iteratingI(iFrom, spatial2, index);
+      index = consume.iteratingJ(jFrom + 1, jEnd, spatial2, index);
+      iFrom = 0;
+    }
+
+    for (; iFrom <= iEnd; iFrom++, index++) {
+      consume(index);
+    }
+  }
+}
+
+mixin _MSetBitsFieldSpatial3
+    implements _MFlagsContainerSpatial3<bool>, _MSetBitsField<(int, int, int)> {
+  @override
   void _sub(
-    void Function(int, int, int) consume,
-    (int, int, int) begin,
+    void Function(int) consume,
+    (int, int, int) from,
     (int, int, int)? limit,
-  );
+  ) {
+    assert(validateIndex(from) && (limit == null || validateIndex(limit)));
+    final spatial2 = this.spatial2,
+        spatial3 = this.spatial3,
+        end = limit ?? (spatial1 - 1, spatial2 - 1, spatial3 - 1),
+        kEnd = end.$1,
+        jEnd = end.$2,
+        iEnd = end.$3;
+    var kFrom = from.$1,
+        jFrom = from.$2,
+        iFrom = from.$3,
+        index = (kFrom * spatial2 + jFrom) * spatial3 + iFrom;
+
+    if (kFrom < kEnd) {
+      index = consume.iteratingI(iFrom, spatial3, index);
+      index = consume.iteratingJ(jFrom + 1, spatial2, spatial3, index);
+      index = consume.iteratingK(kFrom + 1, kEnd, spatial2, spatial3, index);
+      jFrom = 0;
+      iFrom = 0;
+    }
+
+    if (jFrom < jEnd) {
+      index = consume.iteratingI(iFrom, spatial3, index);
+      index = consume.iteratingJ(jFrom + 1, spatial2, spatial3, index);
+      iFrom = 0;
+    }
+
+    for (; iFrom <= iEnd; iFrom++, index++) {
+      consume(index);
+    }
+  }
+}
+
+mixin _MSetBitsFieldSpatial4
+    implements
+        _MFlagsContainerSpatial4<bool>,
+        _MSetBitsField<(int, int, int, int)> {
+  @override
+  void _sub(
+    void Function(int) consume,
+    (int, int, int, int) from,
+    (int, int, int, int)? limit,
+  ) {
+    assert(validateIndex(from) && (limit == null || validateIndex(limit)));
+    final s2 = spatial2,
+        s3 = spatial3,
+        s4 = spatial4,
+        end = limit ?? (spatial1 - 1, s2 - 1, s3 - 1, s4 - 1),
+        lEnd = end.$1,
+        kEnd = end.$2,
+        jEnd = end.$3,
+        iEnd = end.$4;
+    var lFrom = from.$1,
+        kFrom = from.$2,
+        jFrom = from.$3,
+        iFrom = from.$4,
+        index = ((lFrom * s2 + kFrom) * s3 + jFrom) * s4 + iFrom;
+
+    if (lFrom < lEnd) {
+      index = consume.iteratingI(iFrom, s4, index);
+      index = consume.iteratingJ(jFrom + 1, s3, s4, index);
+      index = consume.iteratingK(kFrom + 1, s2, s3, s4, index);
+      index = consume.iteratingL(lFrom + 1, lEnd, s2, s3, s4, index);
+      kFrom = 0;
+      jFrom = 0;
+      iFrom = 0;
+    }
+
+    if (kFrom < kEnd) {
+      index = consume.iteratingI(iFrom, s4, index);
+      index = consume.iteratingJ(jFrom + 1, s3, s4, index);
+      index = consume.iteratingK(kFrom + 1, kEnd, s3, s4, index);
+      jFrom = 0;
+      iFrom = 0;
+    }
+
+    if (jFrom < jEnd) {
+      index = consume.iteratingI(iFrom, s4, index);
+      index = consume.iteratingJ(jFrom + 1, jEnd, s4, index);
+      iFrom = 0;
+    }
+
+    for (; iFrom <= iEnd; iFrom++, index++) {
+      consume(index);
+    }
+  }
 }

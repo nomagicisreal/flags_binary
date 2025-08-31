@@ -322,7 +322,7 @@ extension TypedIntList on TypedDataList<int> {
   ///
   int? pFirstAfter(int p, int shift, int mask, int sizeEach) {
     if (p > length * sizeEach - 1) return null;
-    p = p < 1 ? 1 : p + 1;
+    p = p < 1 ? 1 : p + 1; // todo: debug
     return pFirstFrom(p >> shift, p & mask, sizeEach);
   }
 

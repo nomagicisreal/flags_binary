@@ -54,10 +54,11 @@ abstract class _AFlagsPositionAble<I> implements _PFlags {
   int _positionOf(I index);
 }
 
-abstract class _AFlagsOn<F> implements _PFlags {
+abstract class _AFlagsOn<F, I> implements _PFlags {
   F collapseOn(int index);
 
-  // void includeOn(int index, Iterable<I> position)
+  void includesOn(int index, Iterable<I> inclusion);
+  void excludesOn(int index, Iterable<I> exclusion);
 }
 
 abstract class _AFlagsEquatable<F> implements _PFlags {

@@ -12,5 +12,6 @@ part 'src/slot/slot_custom.dart';
 part 'src/flags.dart';
 part 'src/flags_abstraction.dart';
 part 'src/flags_impl.dart';
-part 'src/flags_impl_set.dart';
 part 'src/flags_impl_map.dart';
+part 'src/flags_impl_set.dart';
+part 'src/flags_impl_set_date.dart';

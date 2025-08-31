@@ -359,6 +359,121 @@ mixin _MEquatableSlot<T, S extends SlotParent<T>>
 ///
 ///
 ///
+mixin _MOnFlagsIndexSub<F, I, J> on _MFieldContainerPositionAble<I>
+    implements _AFlagsSpatial1, _AFlagsOn<F, J> {
+  bool _validateIndexSub(J indexSub);
+
+  I _indexMerge(int index, J indexSub);
+
+  @override
+  void includesOn(int index, Iterable<J> inclusion) {
+    assert(index.isRangeOpenUpper(0, spatial1));
+    for (var indexSub in inclusion) {
+      assert(_validateIndexSub(indexSub));
+      _bitSet(_positionOf(_indexMerge(index, indexSub)));
+    }
+  }
+
+  @override
+  void excludesOn(int index, Iterable<J> exclusion) {
+    assert(index.isRangeOpenUpper(0, spatial1));
+    for (var indexSub in exclusion) {
+      assert(_validateIndexSub(indexSub));
+      _bitClear(_positionOf(_indexMerge(index, indexSub)));
+    }
+  }
+}
+
+mixin _MOnFieldSpatial2 on _MOnFlagsIndexSub<Field, (int, int), int>
+    implements _AFlagsSpatial2 {
+  @override
+  bool _validateIndexSub(int indexSub) =>
+      indexSub.isRangeOpenUpper(0, spatial2);
+
+  @override
+  (int, int) _indexMerge(int index, int indexSub) => (index, indexSub);
+
+  @override
+  Field collapseOn(int index) {
+    assert(index.isRangeOpenUpper(0, spatial1));
+    final spatial2 = this.spatial2,
+        start = index * spatial2,
+        field = Field(spatial2);
+    for (var i = 0; i < spatial2; i++) {
+      if (_bitOn(start + i)) field._bitSet(i);
+    }
+    return field;
+  }
+}
+
+mixin _MOnFieldSpatial3
+    on _MOnFlagsIndexSub<Field2D, (int, int, int), (int, int)>
+    implements _AFlagsSpatial3 {
+  @override
+  bool _validateIndexSub((int, int) indexSub) =>
+      indexSub.$1.isRangeOpenUpper(0, spatial2) &&
+      indexSub.$2.isRangeOpenUpper(0, spatial3);
+
+  @override
+  (int, int, int) _indexMerge(int index, (int, int) indexSub) =>
+      (index, indexSub.$1, indexSub.$2);
+
+  @override
+  Field2D collapseOn(int index) {
+    assert(index.isRangeOpenUpper(0, spatial1));
+    final spatial2 = this.spatial2,
+        spatial3 = this.spatial3,
+        field = Field2D(spatial2, spatial3),
+        start = index * spatial2 * spatial3;
+    for (var j = 0; j < spatial2; j++) {
+      final begin = j * spatial3;
+      for (var i = 0; i < spatial3; i++) {
+        final p = begin + i;
+        if (_bitOn(start + p)) field._bitSet(p);
+      }
+    }
+    return field;
+  }
+}
+
+mixin _MOnFieldSpatial4
+    on _MOnFlagsIndexSub<Field3D, (int, int, int, int), (int, int, int)>
+    implements _AFlagsSpatial4 {
+  @override
+  bool _validateIndexSub((int, int, int) indexSub) =>
+      indexSub.$1.isRangeOpenUpper(0, spatial2) &&
+      indexSub.$2.isRangeOpenUpper(0, spatial3) &&
+      indexSub.$3.isRangeOpenUpper(0, spatial4);
+
+  @override
+  (int, int, int, int) _indexMerge(int index, (int, int, int) indexSub) =>
+      (index, indexSub.$1, indexSub.$2, indexSub.$3);
+
+  @override
+  Field3D collapseOn(int index) {
+    assert(index.isRangeOpenUpper(0, spatial1));
+    final spatial2 = this.spatial2,
+        spatial3 = this.spatial3,
+        spatial4 = this.spatial4,
+        start = index * spatial2 * spatial3 * spatial4,
+        result = Field3D(spatial2, spatial3, spatial4);
+    for (var k = 0; k < spatial2; k++) {
+      final b1 = k * spatial3;
+      for (var j = 0; j < spatial3; j++) {
+        final b2 = j * spatial4;
+        for (var i = 0; i < spatial4; i++) {
+          final p = b1 + b2 + i;
+          if (_bitOn(start + p)) result._bitSet(p);
+        }
+      }
+    }
+    return result;
+  }
+}
+
+///
+///
+///
 ///
 ///
 ///
