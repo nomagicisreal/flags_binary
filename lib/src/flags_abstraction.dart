@@ -58,6 +58,7 @@ abstract class _AFlagsOn<F, I> implements _PFlags {
   F collapseOn(int index);
 
   void includesOn(int index, Iterable<I> inclusion);
+
   void excludesOn(int index, Iterable<I> exclusion);
 }
 
@@ -92,11 +93,12 @@ abstract class _AFlagsSet<I, T> implements _PFlags {
 
   Iterable<T> get availables;
 
-  Iterable<T> availablesFrom(I index, [bool inclusive]);
+  ///
+  /// to prevent duplicate implementation, there is no [availablesFrom] or [availablesTo]
+  ///
+  Iterable<T> availablesRecent([I from, I? to]);
 
-  Iterable<T> availablesTo(I index, [bool inclusive]);
-
-  Iterable<T> availablesSub(I from, I to, [bool includeFrom, bool includeTo]);
+  Iterable<T> availablesLatest(I index, [bool inclusive]);
 }
 
 ///

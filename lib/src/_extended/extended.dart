@@ -61,114 +61,152 @@ extension TypedIntList on TypedDataList<int> {
   static int quotientCeil8(int value) => value + mask8 >> shift8;
 
   ///
-  /// [comparing8First], ...
+  /// [bFirstOf], [pFirstOf]
+  /// [bLastOf], [pLastOf]
   ///
-  static int comparing8First(Uint8List a, Uint8List b) => a[0].compareTo(b[0]);
-
-  static int comparing16First(Uint16List a, Uint16List b) =>
-      a[0].compareTo(b[0]);
-
-  static int comparing32First(Uint16List a, Uint16List b) =>
-      a[0].compareTo(b[0]);
-
-  static int comparing64First(Uint64List a, Uint64List b) =>
-      a[0].compareTo(b[0]);
-
-  ///
-  /// [getPFirst1]
-  /// [getPLast1]
-  ///
-  static int? getPFirst1<T extends TypedDataList<int>>(T list, int sizeEach) =>
-      list.pFirst(sizeEach);
-
-  static int? getPLast1<T extends TypedDataList<int>>(T list, int sizeEach) =>
-      list.pLast(sizeEach);
-
-  ///
-  /// [bFirstOf]
-  /// [bLastOf]
-  ///
-  int? bFirstOf(int j, [int from = 1]) {
-    for (var bits = this[j] >> from - 1, p = from; bits > 0; bits >>= 1, p++) {
-      if (bits & 1 == 1) return p;
+  int? bFirstOf(int j, [int i = 0]) {
+    assert(j > -1 && j < length && i > -1);
+    for (var bits = this[j] >> i; bits > 0; bits >>= 1, i++) {
+      if (bits & 1 == 1) return i;
     }
     return null;
   }
 
-  int? bLastOf(int j, int from) {
-    for (var bits = this[j], i = from - 1; i > -1; i--) {
-      if ((bits & 1 << i) >> i == 1) return i + 1;
+  int? bLastOf(int j, int iLast) {
+    assert(j > -1 && j < length && iLast > -1);
+    for (var bits = this[j]; iLast > -1; iLast--) {
+      if (bits & 1 << iLast == 1 << iLast) return iLast;
+    }
+    return null;
+  }
+
+  int? pFirstOf(int pJ, [int pI = 1]) {
+    assert(pJ > 0 && pJ <= length && pI > 0);
+    for (var bits = this[pJ - 1] >> pI - 1; bits > 0; bits >>= 1, pI++) {
+      if (bits & 1 == 1) return pI;
+    }
+    return null;
+  }
+
+  int? pLastOf(int pJ, int pILast) {
+    assert(pJ > 0 && pJ <= length && pILast > 0);
+    for (var bits = this[pJ - 1], i = pILast - 1; i > -1; i--) {
+      if (bits & 1 << i == 1 << i) return i + 1;
     }
     return null;
   }
 
   ///
-  /// [bitsOf]
-  /// [bitsMappedOf]
-  /// [bitsMappedOfLimit]
-  /// [bitsMappedFrom]
-  /// [bitsMappedTo]
+  /// [bits], [ps]
+  /// [bitsFixed], [psFixed]
   ///
-  Iterable<int> bitsOf(int i, [int from = 1]) sync* {
-    for (var bits = this[i] >> from - 1, p = from; bits > 0; bits >>= 1, p++) {
+  Iterable<int> bits([int j = 0, int i = 0]) sync* {
+    assert(j > -1 && j < length && i > -1);
+    for (var bits = this[j] >> i; bits > 0; bits >>= 1, i++) {
+      if (bits & 1 == 1) yield i;
+    }
+  }
+
+  Iterable<int> bitsFixed(int iLimit, [int j = 0, int i = 0]) sync* {
+    assert(j > -1 && j < length && i > -1 && i < iLimit);
+    for (var bits = this[j] >> i; i < iLimit; bits >>= 1, i++) {
+      if (bits & 1 == 1) yield i;
+    }
+  }
+
+  //
+  Iterable<int> ps([int j = 0, int p = 1]) sync* {
+    assert(j > -1 && j < length && p > 0);
+    for (var bits = this[j] >> p - 1; bits > 0; bits >>= 1, p++) {
       if (bits & 1 == 1) yield p;
     }
   }
 
-  Iterable<T> bitsMappedOf<T>(
-    int i,
-    T Function(int) mapping, [
-    int from = 1,
-  ]) sync* {
-    for (var bits = this[i] >> from - 1, p = from; bits > 0; bits >>= 1, p++) {
-      if (bits & 1 == 1) yield mapping(p);
+  Iterable<int> psFixed(int pLimit, [int j = 0, int p = 1]) sync* {
+    assert(j > -1 && j < length && p > -1 && p < pLimit);
+    for (var bits = this[j] >> p - 1; p < pLimit; bits >>= 1, p++) {
+      if (bits & 1 == 1) yield p;
     }
   }
 
-  Iterable<T> bitsMappedOfLimit<T>(
-    int i,
-    int limit,
+  ///
+  /// [mapBits], [mapPs]
+  /// [mapBitsFixed], [mapPs]
+  /// [mapBitsAll]; [mapPsAll]
+  ///
+  Iterable<T> mapBits<T>(
     T Function(int) mapping, [
-    int from = 1,
+    int j = 0,
+    int i = 0,
   ]) sync* {
-    for (
-      var bits = this[i] >> from - 1, p = from;
-      p < limit;
-      bits >>= 1, p++
-    ) {
-      if (bits & 1 == 1) yield mapping(p);
+    assert(j > -1 && j < length && i > -1);
+    for (var bits = this[j] >> i; bits > 0; bits >>= 1, i++) {
+      if (bits & 1 == 1) yield mapping(i);
     }
   }
 
-  Iterable<T> bitsMappedFrom<T>(
-    int index,
+  Iterable<T> mapBitsFixed<T>(
+    T Function(int) mapping,
+    int iLimit, [
+    int j = 0,
+    int i = 0,
+  ]) sync* {
+    assert(j > -1 && j < length && i > -1 && i < iLimit);
+    for (var bits = this[j] >> i; i < iLimit; bits >>= 1, i++) {
+      if (bits & 1 == 1) yield mapping(i);
+    }
+  }
+
+  Iterable<T> mapBitsAll<T>(
     T Function(int, int) mapping, [
-    int from = 1,
+    int j = 0,
+    int? jLimit,
+    int i = 0,
   ]) sync* {
-    final length = this.length;
-    for (; index < length; index++) {
-      for (
-        var bits = this[index] >> from - 1, p = from;
-        bits > 0;
-        bits >>= 1, p++
-      ) {
-        if (bits & 1 == 1) yield mapping(index, p);
+    final limit = jLimit ?? length;
+    assert(j > -1 && j < limit && i > -1);
+    for (; j < limit; j++) {
+      for (var bits = this[j] >> i; bits > 0; bits >>= 1, i++) {
+        if (bits & 1 == 1) yield mapping(j, i);
       }
     }
   }
 
-  Iterable<T> bitsMappedTo<T>(
-    int index,
-    T Function(int, int) mapping, [
-    int from = 1,
+  //
+  Iterable<T> mapPs<T>(
+    T Function(int) mapping, [
+    int pJ = 0,
+    int pI = 1,
   ]) sync* {
-    for (var i = 0; i <= index; i++) {
-      for (
-        var bits = this[i] >> from - 1, p = from;
-        bits > 0;
-        bits >>= 1, p++
-      ) {
-        if (bits & 1 == 1) yield mapping(i, p);
+    assert(pJ > 0 && pJ <= length && pI > 0);
+    for (var bits = this[pJ - 1] >> pI - 1; bits > 0; bits >>= 1, pI++) {
+      if (bits & 1 == 1) yield mapping(pI);
+    }
+  }
+
+  Iterable<T> mapPsFixed<T>(
+    T Function(int) mapping,
+    int pLimit, [
+    int pJ = 1,
+    int pI = 1,
+  ]) sync* {
+    assert(pJ > 0 && pJ <= length && pI > 0 && pI < pLimit);
+    for (var bits = this[pJ - 1] >> pI - 1; pI < pLimit; bits >>= 1, pI++) {
+      if (bits & 1 == 1) yield mapping(pI);
+    }
+  }
+
+  Iterable<T> mapPsAll<T>(
+    T Function(int, int) mapping, [
+    int pJ = 1,
+    int? pJLimit,
+    int pI = 1,
+  ]) sync* {
+    final last = pJLimit ?? length;
+    assert(pJ > 0 && pJ <= last && pI > 0);
+    for (; pJ <= last; pJ++) {
+      for (var bits = this[pJ - 1] >> pI - 1; bits > 0; bits >>= 1, pI++) {
+        if (bits & 1 == 1) yield mapping(pJ, pI);
       }
     }
   }
@@ -177,20 +215,29 @@ extension TypedIntList on TypedDataList<int> {
   /// [pSet], [pClear]
   /// [pConsume]
   ///
-  void pSet(int p, int shift, int mask) => this[p >> shift] |= 1 << (p & mask);
+  void pSet(int p, int shift, int mask) {
+    assert(p > -1 && mask + 1 == 1 << shift);
+    this[p >> shift] |= 1 << (p & mask);
+  }
 
-  void pClear(int p, int shift, int mask) =>
-      this[p >> shift] &= ~(1 << (p & mask));
+  void pClear(int p, int shift, int mask) {
+    assert(p > -1 && mask + 1 == 1 << shift);
+    this[p >> shift] &= ~(1 << (p & mask));
+  }
 
   void pConsume(
     void Function(int p) consume,
-    int size,
-    int max, [
+    int sizeEach, [
     int bit = 1,
+    int? jLimit,
   ]) {
-    for (var j = 0; j < max; j++) {
+    jLimit ??= length;
+    assert(
+      sizeEach > 0 && jLimit > 0 && jLimit <= length && bit == 0 || bit == 1,
+    );
+    for (var j = 0; j < jLimit; j++) {
       for (var i = 1, bits = this[j]; bits > 0; i++, bits >>= 1) {
-        if (bits & 1 == bit) consume(size * j + i);
+        if (bits & 1 == bit) consume(sizeEach * j + i);
       }
     }
   }
@@ -198,42 +245,51 @@ extension TypedIntList on TypedDataList<int> {
   ///
   /// [pOn]
   ///
-  bool pOn(int p, int shift, int mask, [int bit = 1]) =>
-      (this[p >> shift] >> (p & mask)) & 1 == bit;
+  bool pOn(int p, int shift, int mask) {
+    assert(p > -1 && mask + 1 == 1 << shift);
+    return (this[p >> shift] >> (p & mask)) & 1 == 1;
+  }
 
   ///
   /// [pFirst]
   /// [pLast]
   /// [pN]
   ///
-  int? pFirst(int sizeEach, [int bit = 1]) {
+  int? pFirst(int sizeEach) {
+    assert(sizeEach > 0);
     final length = this.length;
     for (var j = 0; j < length; j++) {
-      for (var i = 0, bits = this[j]; bits > 0; i++, bits >>= 1) {
-        if (bits & 1 == bit) return sizeEach * j + i;
+      var i = 0;
+      for (var bits = this[j]; bits > 0; i++, bits >>= 1) {
+        if (bits & 1 == 1) return sizeEach * j + i;
       }
+      assert(i < sizeEach);
     }
     return null;
   }
 
-  int? pLast(int sizeEach, [int bit = 1]) {
+  int? pLast(int sizeEach) {
+    assert(sizeEach > 0);
     for (var j = length - 1; j > -1; j--) {
-      for (var bits = this[j], i = sizeEach - 1; i > -1; i--) {
-        if ((bits & 1 << i) >> i == bit) return sizeEach * j + i + 1;
+      for (var i = sizeEach - 1, bits = this[j]; i > -1; i--) {
+        if (bits & 1 << i == 1 << i) return sizeEach * j + i;
       }
     }
     return null;
   }
 
-  int? pN(int n, int sizeEach, [int bit = 1]) {
+  int? pN(int n, int sizeEach) {
+    assert(sizeEach > 0);
     final length = this.length;
     for (var j = 0; j < length; j++) {
-      for (var i = 0, bits = this[j]; bits > 0; i++, bits >>= 1) {
-        if (bits & 1 == bit) {
+      var i = 0;
+      for (var bits = this[j]; bits > 0; i++, bits >>= 1) {
+        if (bits & 1 == 1) {
           n--;
           if (n == 0) return sizeEach * j * i;
         }
       }
+      assert(i < sizeEach);
     }
     return null;
   }
@@ -243,75 +299,62 @@ extension TypedIntList on TypedDataList<int> {
   /// [pNFrom]
   /// [pLastTo]
   ///
-  int? pFirstFrom(int j, int i, int sizeEach, [int bit = 1]) {
-    var bits = this[j];
-    while (bits > 0) {
-      if (bits & 1 == bit) return sizeEach * j + i;
-      i++;
-      bits >>= 1;
-    }
-    j++;
-
+  int? pFirstFrom(int j, int from, int sizeEach) {
+    assert(sizeEach > 0 && from.isRangeOpenUpper(0, sizeEach));
     final length = this.length;
-    while (j < length) {
-      i = 0;
-      bits = this[j];
-      while (bits > 0) {
-        if (bits & 1 == bit) return sizeEach * j + i;
-        i++;
-        bits >>= 1;
+    if (j >= length) return null;
+
+    for (var bits = this[j] >> from; bits > 0; from++, bits >>= 1) {
+      if (bits & 1 == 1) return sizeEach * j + from;
+    }
+    for (j++; j < length; j++) {
+      from = 0;
+      for (var bits = this[j]; bits > 0; from++, bits >>= 1) {
+        if (bits & 1 == 1) return sizeEach * j + from;
       }
-      j++;
+      assert(from < sizeEach);
     }
     return null;
   }
 
-  int? pLastTo(int j, int p, int sizeEach, [int bit = 1]) {
-    var bits = this[j], i = p - 1;
-    while (i > -1) {
-      if ((bits & 1 << i) >> i == bit) return sizeEach * j + i + 1;
-      i--;
-    }
-    j--;
+  int? pLastTo(int j, int to, int sizeEach) {
+    assert(sizeEach > 0 && to.isRangeOpenUpper(0, sizeEach));
+    if (j >= length) return null;
 
-    while (j > -1) {
-      i = sizeEach - 1;
-      bits = this[j];
-      while (i > -1) {
-        if ((bits & 1 << i) >> i == bit) return sizeEach * j + i + 1;
-        i--;
+    for (var bits = this[j]; to > -1; to--) {
+      if (bits & 1 << to == 1 << to) return sizeEach * j + to;
+    }
+
+    for (j--; j > -1; j--) {
+      to = sizeEach - 1;
+      for (var bits = this[j]; to > -1; to--) {
+        if (bits & 1 << to == 1 << to) return sizeEach * j + to;
       }
-      j--;
     }
-
     return null;
   }
 
-  int? pNFrom(int j, int p, int sizeEach, int n, [int bit = 1]) {
-    var bits = this[j];
-    while (bits > 0) {
-      if (bits & 1 == bit) {
+  int? pNFrom(int j, int from, int sizeEach, int n) {
+    assert(sizeEach > 0 && from.isRangeOpenUpper(0, sizeEach));
+    final length = this.length;
+    if (j >= length) return null;
+
+    for (var bits = this[j] >> from; bits > 0; from++, bits >>= 1) {
+      if (bits & 1 == 1) {
         n--;
-        if (n == 0) return sizeEach * j + p;
+        if (n == 0) return sizeEach * j + from;
       }
-      p++;
-      bits >>= 1;
+      assert(from < sizeEach);
     }
-    j++;
-
-    final length = this.length;
-    while (j < length) {
-      p = 1;
-      bits = this[j];
-      while (bits > 0) {
-        if (bits & 1 == bit) {
+    for (j++; j < length; j++) {
+      from = 1;
+      for (var bits = this[j]; bits > 0; from++, bits >>= 1) {
+        if (bits & 1 == 1) {
           n--;
-          if (n == 0) return sizeEach * j + p;
+          if (n == 0) return sizeEach * j + from;
         }
-        p++;
-        bits >>= 1;
       }
-      j++;
+      assert(from < sizeEach);
     }
     return null;
   }
@@ -321,15 +364,16 @@ extension TypedIntList on TypedDataList<int> {
   /// [pLastBefore]
   ///
   int? pFirstAfter(int p, int shift, int mask, int sizeEach) {
-    if (p > length * sizeEach - 1) return null;
-    p = p < 1 ? 1 : p + 1; // todo: debug
+    assert(p > -1 && mask + 1 == 1 << shift);
+    if (p >= length * sizeEach) return null;
+    p++;
     return pFirstFrom(p >> shift, p & mask, sizeEach);
   }
 
   int? pLastBefore(int p, int shift, int mask, int sizeEach) {
-    if (p < 2) return null;
-    final size = length * sizeEach;
-    p = p > size ? size : p - 1;
+    assert(p > -1 && mask + 1 == 1 << shift);
+    if (p == 0) return null;
+    p--;
     return pLastTo(p >> shift, p & mask, sizeEach);
   }
 
@@ -337,250 +381,232 @@ extension TypedIntList on TypedDataList<int> {
   ///
   /// [pAvailable], [mapPAvailable]
   /// [pAvailableFrom], [mapPAvailableFrom]
-  /// [pAvailableTo], [mapPAvailableTo]
-  /// [pAvailableSub], [mapPAvailableSub]
-  /// notice that [sizeEach] must be 2^n, so [sizeEach] - 1 will be [_Field8.mask8], [TypedIntList.mask16], ...
+  /// [pAvailableLatest], [mapPAvailableLatest]
+  /// [pAvailableRecent], [mapPAvailableRecent]
   ///
   ///
-  Iterable<int> pAvailable<T>(int sizeEach) sync* {
+  ///
+  Iterable<int> pAvailable(int sizeEach) sync* {
+    assert(sizeEach > 0);
     final length = this.length;
-    for (var j = 0; j < length; j++) {
-      final prefix = sizeEach * j;
-      var bits = this[j];
-      for (var i = 0; bits > 0; i++, bits >>= 1) {
-        if (bits & 1 == 1) yield prefix + i;
+    for (var j = 0, index = 0; j < length; index = sizeEach * j) {
+      for (var bits = this[j]; bits > 0; index++, bits >>= 1) {
+        if (bits & 1 == 1) yield index;
       }
+      j++;
+      assert(index < sizeEach * j);
     }
   }
 
-  Iterable<int> pAvailableFrom(int from, int sizeEach, bool inclusive) sync* {
-    from += inclusive ? 0 : 1;
-    var j = from ~/ sizeEach;
-    final prefix = sizeEach * j;
-    for (
-      var i = from & sizeEach - 1, bits = this[j] >> i - 1;
-      bits > 0;
-      i++, bits >>= 1
-    ) {
-      if (bits & 1 == 1) yield prefix + i;
-    }
-    j++;
-
-    final length = this.length;
-    for (; j < length; j++) {
-      final prefix = sizeEach * j;
-      for (var i = 0, bits = this[j]; bits > 0; i++, bits >>= 1) {
-        if (bits & 1 == 1) yield prefix + i;
-      }
-    }
-  }
-
-  Iterable<int> pAvailableTo(int to, int sizeEach, bool inclusive) sync* {
-    to -= inclusive ? 0 : 1;
-    if (to < 1) return;
-
-    final limit = to ~/ sizeEach;
-    for (var j = 0; j < limit; j++) {
-      final prefix = sizeEach * j;
-      for (var i = 0, bits = this[j]; bits > 0; bits >>= 1, i++) {
-        if (bits & 1 == 1) yield prefix + i;
-      }
-    }
-
-    final max = to & sizeEach - 1;
-    final prefix = sizeEach * limit;
-    for (var i = 0, bits = this[limit]; i <= max; bits >>= 1, i++) {
-      if (bits & 1 == 1) yield prefix + i;
-    }
-  }
-
-  // inclusive
-  Iterable<int> pAvailableSub(
-    int? from,
-    int? to,
+  Iterable<int> pAvailableFrom(
+    int j,
+    int i,
     int sizeEach,
     bool includeFrom,
-    bool includeTo,
   ) sync* {
-    if (from == null) {
-      if (to == null) {
-        yield* pAvailable(sizeEach);
-        return;
-      }
-      yield* pAvailableTo(to, sizeEach, includeFrom);
-      return;
-    }
-    if (to == null) {
-      yield* pAvailableFrom(from, sizeEach, includeTo);
-      return;
-    }
-
-    from += includeFrom ? 0 : 1;
-    to -= includeTo ? 0 : 1;
-    if (from > to) return;
-
-    final limit = to ~/ sizeEach;
-    final max = to & sizeEach - 1;
-    var j = from ~/ sizeEach;
-    var i = from & sizeEach - 1;
-    var start = sizeEach * j;
-
-    // on from && on to
-    if (j == limit) {
-      for (var bits = this[j]; i <= max; bits >>= 1, i++) {
-        if (bits & 1 == 1) yield start + i;
-      }
-      return;
-    }
-
-    // on from
-    for (var bits = this[j] >> i - 1; bits > 0; i++, bits >>= 1) {
-      if (bits & 1 == 1) yield start + i;
-    }
-    j++;
-
-    // after from, before to
-    for (; j < limit; j++) {
-      start = sizeEach * j;
-      i = 0;
-      for (var bits = this[j]; bits > 0; bits >>= 1, i++) {
-        if (bits & 1 == 1) yield start + i;
+    if (!includeFrom) {
+      i++;
+      if (i == sizeEach) {
+        j++;
+        i = 0;
       }
     }
+    final length = this.length;
+    assert(sizeEach > 0);
+    assert(j.isRangeOpenUpper(0, length) && i.isRangeOpenUpper(0, sizeEach));
 
-    // on to
-    start = sizeEach * limit;
-    i = 0;
-    for (var bits = this[limit]; i <= max; bits >>= 1, i++) {
-      if (bits & 1 == 1) yield start + i;
+    var bits = this[j] >> i, p = sizeEach * j;
+    while (true) {
+      for (; bits > 0; p++, bits >>= 1) {
+        if (bits & 1 == 1) yield p;
+      }
+      j++;
+      assert(p < sizeEach * j);
+      bits = this[j];
+      p = sizeEach * j;
+      if (j == length) break;
+    }
+  }
+
+  Iterable<int> pAvailableLatest(
+    int j,
+    int i,
+    int sizeEach,
+    bool inclusive,
+  ) sync* {
+    if (!inclusive) {
+      i--;
+      if (i < 0) {
+        j--;
+        i = sizeEach - 1;
+      }
+    }
+    assert(j > -1 && i.isRangeOpenUpper(0, sizeEach) && sizeEach > 0);
+    final length = this.length;
+    if (j >= length) j = length - 1;
+    var bits = this[j] >> i, p = sizeEach * j;
+    while (true) {
+      for (; i > -1; i--) {
+        if (bits & 1 << i == 1 << i) yield p + i;
+      }
+      j--;
+      if (j < 0) return;
+      bits = this[j];
+      p -= sizeEach;
+      i = sizeEach - 1;
+    }
+  }
+
+  Iterable<int> pAvailableRecent(
+    int sizeEach, [
+    int j = 0,
+    int i = 0,
+    int? jTo,
+    int? iTo,
+  ]) sync* {
+    assert(() {
+      if (sizeEach < 1) return false;
+      if (j != 0) {
+        if (j < 0 || j >= length) return false;
+        if (jTo != null && jTo < j) return false;
+      }
+      if (i != 0) {
+        if (i < 0 || i >= sizeEach) return false;
+        if (iTo != null && iTo < i) return false;
+      }
+      // if both null, call pAvailableFrom instead of pAvailableRecent
+      return jTo != null || iTo != null;
+    }());
+
+    final jLast = jTo ?? length - 1, iLast = iTo ?? sizeEach - 1;
+    var bits = this[j] >> i, p = sizeEach * j;
+    while (true) {
+      for (; bits > 0; p++, bits >>= 1) {
+        if (bits & 1 == 1) yield p;
+      }
+      j++;
+      assert(p < sizeEach * j);
+      bits = this[j];
+      p = sizeEach * j;
+      if (j == jLast) break;
+    }
+    for (i = 0; i <= iLast; i++, bits >>= 1) {
+      if (bits & 1 == 1) yield p + i;
     }
   }
 
   ///
   ///
   ///
-  Iterable<T> mapPAvailable<T>(int sizeEach, T Function(int) mapping) sync* {
+  Iterable<T> mapPAvailable<T>(int sizeEach, T Function(int) mapper) sync* {
+    assert(sizeEach > 0);
     final length = this.length;
-    for (var j = 0; j < length; j++) {
-      final prefix = sizeEach * j;
-      var bits = this[j];
-      for (var i = 0; bits > 0; i++, bits >>= 1) {
-        if (bits & 1 == 1) yield mapping(prefix + i);
+    for (var j = 0, index = 0; j < length; index = sizeEach * j) {
+      for (var bits = this[j]; bits > 0; index++, bits >>= 1) {
+        if (bits & 1 == 1) yield mapper(index);
       }
+      j++;
+      assert(index < sizeEach * j);
     }
   }
 
   Iterable<T> mapPAvailableFrom<T>(
-    int from,
+    int j,
+    int i,
     int sizeEach,
-    T Function(int) mapping,
-    bool inclusive,
-  ) sync* {
-    from += inclusive ? 0 : 1;
-    var j = from ~/ sizeEach;
-    final prefix = sizeEach * j;
-    for (
-      var i = from & sizeEach - 1, bits = this[j] >> i - 1;
-      bits > 0;
-      i++, bits >>= 1
-    ) {
-      if (bits & 1 == 1) yield mapping(prefix + i);
-    }
-    j++;
-
-    final length = this.length;
-    for (; j < length; j++) {
-      final prefix = sizeEach * j;
-      for (var i = 0, bits = this[j]; bits > 0; i++, bits >>= 1) {
-        if (bits & 1 == 1) yield mapping(prefix + i);
-      }
-    }
-  }
-
-  Iterable<T> mapPAvailableTo<T>(
-    int to,
-    int sizeEach,
-    T Function(int) mapping,
-    bool inclusive,
-  ) sync* {
-    to -= inclusive ? 0 : 1;
-    if (to < 1) return;
-
-    final limit = to ~/ sizeEach;
-    for (var j = 0; j < limit; j++) {
-      final prefix = sizeEach * j;
-      for (var i = 0, bits = this[j]; bits > 0; bits >>= 1, i++) {
-        if (bits & 1 == 1) yield mapping(prefix + i);
-      }
-    }
-
-    final max = to & sizeEach - 1;
-    final prefix = sizeEach * limit;
-    for (var i = 0, bits = this[limit]; i <= max; bits >>= 1, i++) {
-      if (bits & 1 == 1) yield mapping(prefix + i);
-    }
-  }
-
-  // inclusive
-  Iterable<T> mapPAvailableSub<T>(
-    int? from,
-    int? to,
-    int sizeEach,
-    T Function(int) mapping,
     bool includeFrom,
-    bool includeTo,
+    T Function(int) mapper,
   ) sync* {
-    if (from == null) {
-      if (to == null) {
-        yield* mapPAvailable(sizeEach, mapping);
-        return;
-      }
-      yield* mapPAvailableTo(to, sizeEach, mapping, includeFrom);
-      return;
-    }
-    if (to == null) {
-      yield* mapPAvailableFrom(from, sizeEach, mapping, includeTo);
-      return;
-    }
-
-    from += includeFrom ? 0 : 1;
-    to -= includeTo ? 0 : 1;
-    if (from > to) return;
-
-    final limit = to ~/ sizeEach;
-    final max = to & sizeEach - 1;
-    var j = from ~/ sizeEach;
-    var i = from & sizeEach - 1;
-    var prefix = sizeEach * j;
-
-    // on from && on to
-    if (j == limit) {
-      for (var bits = this[j]; i <= max; bits >>= 1, i++) {
-        if (bits & 1 == 1) yield mapping(prefix + i);
-      }
-      return;
-    }
-
-    // on from
-    for (var bits = this[j] >> i - 1; bits > 0; i++, bits >>= 1) {
-      if (bits & 1 == 1) yield mapping(prefix + i);
-    }
-    j++;
-
-    // after from, before to
-    for (; j < limit; j++) {
-      prefix = sizeEach * j;
-      i = 0;
-      for (var bits = this[j]; bits > 0; bits >>= 1, i++) {
-        if (bits & 1 == 1) yield mapping(prefix + i);
+    if (!includeFrom) {
+      i++;
+      if (i == sizeEach) {
+        j++;
+        i = 0;
       }
     }
+    final length = this.length;
+    assert(sizeEach > 0);
+    assert(j.isRangeOpenUpper(0, length) && i.isRangeOpenUpper(0, sizeEach));
 
-    // on to
-    prefix = sizeEach * limit;
-    i = 0;
-    for (var bits = this[limit]; i <= max; bits >>= 1, i++) {
-      if (bits & 1 == 1) yield mapping(prefix + i);
+    var bits = this[j] >> i, p = sizeEach * j;
+    while (true) {
+      for (; bits > 0; p++, bits >>= 1) {
+        if (bits & 1 == 1) yield mapper(p);
+      }
+      j++;
+      assert(p < sizeEach * j);
+      bits = this[j];
+      p = sizeEach * j;
+      if (j == length) break;
+    }
+  }
+
+  Iterable<T> mapPAvailableLatest<T>(
+    int j,
+    int i,
+    int sizeEach,
+    bool inclusive,
+    T Function(int) mapper,
+  ) sync* {
+    if (!inclusive) {
+      i--;
+      if (i < 0) {
+        j--;
+        i = sizeEach - 1;
+      }
+    }
+    assert(j > -1 && i.isRangeOpenUpper(0, sizeEach) && sizeEach > 0);
+    final length = this.length;
+    if (j >= length) j = length - 1;
+    var bits = this[j] >> i, p = sizeEach * j;
+    while (true) {
+      for (; i > -1; i--) {
+        if (bits & 1 << i == 1 << i) yield mapper(p + i);
+      }
+      j--;
+      if (j < 0) return;
+      bits = this[j];
+      p -= sizeEach;
+      i = sizeEach - 1;
+    }
+  }
+
+  Iterable<T> mapPAvailableRecent<T>(
+    int j,
+    int i,
+    int sizeEach,
+    T Function(int) mapper, [
+    int? jTo,
+    int? iTo,
+  ]) sync* {
+    assert(() {
+      if (sizeEach < 1) return false;
+      if (j != 0) {
+        if (j < 0 || j >= length) return false;
+        if (jTo != null && jTo < j) return false;
+      }
+      if (i != 0) {
+        if (i < 0 || i >= sizeEach) return false;
+        if (iTo != null && iTo < i) return false;
+      }
+      // if both null, call pAvailableFrom instead of pAvailableRecent
+      return jTo != null || iTo != null;
+    }());
+
+    final jLast = jTo ?? length - 1, iLast = iTo ?? sizeEach - 1;
+    var bits = this[j] >> i, p = sizeEach * j;
+    while (true) {
+      for (; bits > 0; p++, bits >>= 1) {
+        if (bits & 1 == 1) yield mapper(p);
+      }
+      j++;
+      assert(p < sizeEach * j);
+      bits = this[j];
+      p = sizeEach * j;
+      if (j == jLast) break;
+    }
+    for (i = 0; i <= iLast; i++, bits >>= 1) {
+      if (bits & 1 == 1) yield mapper(p + i);
     }
   }
 }

@@ -40,20 +40,29 @@ mixin _MSetField
   Iterable<int> get availables => _field.pAvailable(_sizeEach);
 
   @override
-  Iterable<int> availablesFrom(int index, [bool inclusive = true]) =>
-      _field.pAvailableFrom(index, _sizeEach, inclusive);
+  Iterable<int> availablesLatest(int index, [bool inclusive = true]) => _field
+      .pAvailableLatest(index >> _shift, index & _mask, _sizeEach, inclusive);
 
   @override
-  Iterable<int> availablesTo(int index, [bool inclusive = true]) =>
-      _field.pAvailableTo(index, _sizeEach, inclusive);
-
-  @override
-  Iterable<int> availablesSub(
-    int from,
-    int to, [
-    bool includeFrom = true,
-    bool includeTo = true,
-  ]) => _field.pAvailableSub(from, to, _sizeEach, includeFrom, includeTo);
+  Iterable<int> availablesRecent([int from = 0, int? to]) {
+    final int shift = _shift, mask = _mask, jFrom, iFrom;
+    final int? jTo, iTo;
+    if (from == 0) {
+      jFrom = 0;
+      iFrom = 0;
+    } else {
+      jFrom = from >> shift;
+      iFrom = from & mask;
+    }
+    if (to == null) {
+      jTo = null;
+      iTo = null;
+    } else {
+      jTo = to >> shift;
+      iTo = to & mask;
+    }
+    return _field.pAvailableRecent(_sizeEach, jFrom, iFrom, jTo, iTo);
+  }
 }
 
 mixin _MSetFieldIndexable<T> on _MFieldContainerPositionAble<T>
@@ -80,27 +89,39 @@ mixin _MSetFieldIndexable<T> on _MFieldContainerPositionAble<T>
   Iterable<T> get availables => _field.mapPAvailable(_sizeEach, _indexOf);
 
   @override
-  Iterable<T> availablesFrom(T index, [bool inclusive = true]) => _field
-      .mapPAvailableFrom(_positionOf(index), _sizeEach, _indexOf, inclusive);
+  Iterable<T> availablesLatest(T index, [bool inclusive = true]) {
+    final p = _positionOf(index);
+    return _field.mapPAvailableLatest(
+      p >> _shift,
+      p & _mask,
+      _sizeEach,
+      inclusive,
+      _indexOf,
+    );
+  }
 
   @override
-  Iterable<T> availablesTo(T index, [bool inclusive = true]) => _field
-      .mapPAvailableTo(_positionOf(index), _sizeEach, _indexOf, inclusive);
-
-  @override
-  Iterable<T> availablesSub(
-    T from,
-    T to, [
-    bool includeFrom = true,
-    bool includeTo = true,
-  ]) => _field.mapPAvailableSub(
-    _positionOf(from),
-    _positionOf(to),
-    _sizeEach,
-    _indexOf,
-    includeFrom,
-    includeTo,
-  );
+  Iterable<T> availablesRecent([T? from, T? to]) {
+    final int shift = _shift, mask = _mask, jF, iF;
+    if (from == null) {
+      jF = 0;
+      iF = 0;
+    } else {
+      final pFrom = _positionOf(from);
+      jF = pFrom >> shift;
+      iF = pFrom & mask;
+    }
+    final int? jT, iT;
+    if (to == null) {
+      jT = null;
+      iT = null;
+    } else {
+      final pTo = _positionOf(to);
+      jT = pTo >> shift;
+      iT = pTo & mask;
+    }
+    return _field.mapPAvailableRecent(_sizeEach, jF, iF, _indexOf, jT, iT);
+  }
 }
 
 ///
@@ -157,19 +178,7 @@ mixin _MSetSlot<I, T>
   Iterable<T> get availables => _slot.filterNotNull;
 
   @override
-  Iterable<T> availablesFrom(I index, [bool inclusive = true]) sync* {
-    final slot = _slot, length = slot.length;
-    var p = inclusive ? _positionOf(index) : _positionOf(index) + 1;
-    if (p > length - 1) return;
-    if (p < 0) p = 0;
-    for (; p < length; p++) {
-      final s = slot[p];
-      if (s != null) yield s;
-    }
-  }
-
-  @override
-  Iterable<T> availablesTo(I index, [bool inclusive = true]) sync* {
+  Iterable<T> availablesLatest(I index, [bool inclusive = true]) sync* {
     final slot = _slot, last = slot.length - 1;
     var p = inclusive ? _positionOf(index) : _positionOf(index) - 1;
     if (p < 0) return;
@@ -181,20 +190,21 @@ mixin _MSetSlot<I, T>
   }
 
   @override
-  Iterable<T> availablesSub(
-    I from,
-    I to, [
-    bool includeFrom = true,
-    bool includeTo = true,
-  ]) sync* {
+  Iterable<T> availablesRecent([I? from, I? to]) sync* {
     final slot = _slot, length = slot.length, last = length - 1;
-    var p = includeFrom ? _positionOf(from) : _positionOf(from) + 1;
+    var p = from == null ? 0 : _positionOf(from);
+    final int pLast;
+    if (to == null) {
+      pLast = last;
+    } else {
+      final pTo = _positionOf(to);
+      assert(p <= pTo, 'invalid index($from, $to) -> position($p, $pTo)');
+      if (pTo < 0) return;
+      pLast = math.min(pTo, last);
+    }
     if (p > last) return;
-    final pLimit = includeTo ? _positionOf(to) + 1 : _positionOf(to);
-    if (pLimit < 1) return;
     if (p < 0) p = 0;
-    final limit = pLimit > length ? length : pLimit;
-    for (; p < limit; p++) {
+    for (; p < pLast; p++) {
       final s = slot[p];
       if (s != null) yield s;
     }

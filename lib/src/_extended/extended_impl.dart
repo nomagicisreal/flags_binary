@@ -3,7 +3,7 @@ part of '../../flags_binary.dart';
 ///
 /// [_hoursADay]
 /// [_minuteADay]
-/// [_monthsDays]
+/// [_monthsDaysWithoutFeb]
 /// [_predicator_less]
 /// [_isYearLeapYear], ...
 /// [_monthDaysOf]
@@ -19,7 +19,7 @@ part of '../../flags_binary.dart';
 ///
 const int _hoursADay = 24;
 const int _minuteADay = 60;
-const Map<int, int> _monthsDays = {
+const Map<int, int> _monthsDaysWithoutFeb = {
   1: 31,
   3: 31,
   4: 30,
@@ -59,20 +59,30 @@ bool _isValidYearMonthScope((int, int) begin, (int, int) end) =>
 bool _isInvalidMonth(int month) =>
     month < DateTime.january || month > DateTime.december;
 
-bool _isValidMonth(int month) => month > 0 && month < 13;
+bool _isValidMonth(int month) =>
+    month >= DateTime.january && month <= DateTime.december;
 
 // bool _isValidHour(int hour) => hour > -1 && hour < 24;
 
 // bool _isInvalidHour(int hour) => hour < 0 || hour > 23;
 
 bool _isValidDay(int year, int month, int day) =>
-    day > 0 && day < _monthDaysOf(year, month) + 1;
+    day >= 1 && day <= _monthDaysOf(year, month);
+
+bool _isInvalidDay(int year, int month, int day) =>
+    day < 1 || day > _monthDaysOf(year, month);
 
 bool _isValidDate((int, int, int) date) {
   final month = date.$2;
   if (_isInvalidMonth(month)) return false;
   return _isValidDay(date.$1, month, date.$3);
 }
+
+// bool _isInvalidDate((int, int, int) date) {
+//   final month = date.$2;
+//   if (_isValidMonth(month)) return false;
+//   return _isInvalidDay(date.$1, month, date.$3);
+// }
 
 ///
 ///
@@ -81,7 +91,7 @@ int _monthDaysOf(int year, int month) => month == 2
     ? _isYearLeapYear(year)
           ? 29
           : 28
-    : _monthsDays[month]!;
+    : _monthsDaysWithoutFeb[month]!;
 
 int yearDaysOf(int year) => _isYearLeapYear(year) ? 366 : 365;
 
@@ -293,27 +303,38 @@ extension _Record3Int on (int, int, int) {
   bool get isValidDate => _isValidDate(this);
 
   bool _comparing(
-    (int, int, int) another,
-    bool Function(int, int) reduceInvalid,
-    bool Function(int, int) reduce,
-    bool Function(int, int) reduceFinal,
-  ) {
+    (int, int, int) other, {
+    required bool Function(int, int) reduceInvalid,
+    required bool Function(int, int) reduce,
+    required bool Function(int, int) reduceFinal,
+  }) {
     final one = this.$1;
-    final oneAnother = another.$1;
+    final oneAnother = other.$1;
     if (reduceInvalid(one, oneAnother)) return false;
     if (reduce(one, oneAnother)) return true;
     final two = this.$2;
-    final twoAnother = another.$2;
+    final twoAnother = other.$2;
     if (reduceInvalid(two, twoAnother)) return false;
     if (reduce(two, twoAnother)) return true;
     final three = this.$3;
-    final threeAnother = another.$3;
+    final threeAnother = other.$3;
     if (reduceInvalid(three, threeAnother)) return false;
     return reduceFinal(three, threeAnother);
   }
 
-  bool operator <((int, int, int) another) =>
-      _comparing(another, _reduce_isLarger, _reduce_isLess, _reduce_isLess);
+  bool operator <((int, int, int) other) => _comparing(
+    other,
+    reduceInvalid: _reduce_isLarger,
+    reduce: _reduce_isLess,
+    reduceFinal: _reduce_isLess,
+  );
+
+  bool operator <=((int, int, int) other) => _comparing(
+    other,
+    reduceInvalid: _reduce_isLarger,
+    reduce: _reduce_isLess,
+    reduceFinal: _reduce_isLessOrEqual,
+  );
 
   // ///
   // /// [daysToDates]
