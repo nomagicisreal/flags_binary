@@ -62,7 +62,7 @@ bool _isInvalidMonth(int month) =>
 bool _isValidMonth(int month) =>
     month >= DateTime.january && month <= DateTime.december;
 
-// bool _isValidHour(int hour) => hour > -1 && hour < 24;
+// bool _isValidHour(int hour) => hour >= 0 && hour < 24;
 
 // bool _isInvalidHour(int hour) => hour < 0 || hour > 23;
 
@@ -256,8 +256,10 @@ extension _Record2Int on (int, int) {
   /// [daysToDate]
   /// [daysToDate]
   ///
-  int monthsToYearMonth(int year, int month) =>
-      month - this.$2 + (year - this.$1) * 12;
+  int monthsToYearMonth(int year, int month) {
+    assert(_isValidMonth(month) && _isValidMonth(this.$2));
+    return month - this.$2 + (year - this.$1) * 12;
+  }
 
   int daysToDate(int year, int month, [int? day]) {
     assert(
@@ -329,12 +331,12 @@ extension _Record3Int on (int, int, int) {
     reduceFinal: _reduce_isLess,
   );
 
-  bool operator <=((int, int, int) other) => _comparing(
-    other,
-    reduceInvalid: _reduce_isLarger,
-    reduce: _reduce_isLess,
-    reduceFinal: _reduce_isLessOrEqual,
-  );
+  // bool operator <=((int, int, int) other) => _comparing(
+  //   other,
+  //   reduceInvalid: _reduce_isLarger,
+  //   reduce: _reduce_isLess,
+  //   reduceFinal: _reduce_isLessOrEqual,
+  // );
 
   // ///
   // /// [daysToDates]
