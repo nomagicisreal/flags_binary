@@ -32,13 +32,13 @@ abstract class Field extends FieldParent
   @override
   bool operator [](int index) {
     assert(validateIndex(index));
-    return _bitOn(index);
+    return _pOn(index);
   }
 
   @override
   void operator []=(int index, bool value) {
     assert(validateIndex(index));
-    return value ? _bitSet(index) : _bitClear(index);
+    return value ? _pSet(index) : _pClear(index);
   }
 
   factory Field(int width, [bool native = false]) {

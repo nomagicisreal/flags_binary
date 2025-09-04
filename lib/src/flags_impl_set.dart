@@ -23,18 +23,18 @@ part of '../flags_binary.dart';
 mixin _MSetField
     implements _AFlagsSet<int, int>, _AField, _AFieldIdentical, _AFieldBits {
   @override
-  int? get first => _field.pFirst(_sizeEach);
+  int? get first => _field.bFirst(_sizeEach);
 
   @override
-  int? get last => _field.pLast(_sizeEach);
+  int? get last => _field.bLast(_sizeEach);
 
   @override
   int? firstAfter(int index) =>
-      _field.pFirstFrom(index >> _shift, index & _mask, _sizeEach);
+      _field.bFirstAfter(index, _shift, _mask, _sizeEach);
 
   @override
   int? lastBefore(int index) =>
-      _field.pLastTo(index >> _shift, index & _mask, _sizeEach);
+      _field.bLastBefore(index, _shift, _mask, _sizeEach);
 
   @override
   Iterable<int> get availables => _field.pAvailable(_sizeEach);
@@ -80,19 +80,19 @@ mixin _MSetFieldIndexable<T> on _MFieldContainerPositionAble<T>
   T _indexOf(int position);
 
   @override
-  T? get first => _field.pFirst(_sizeEach).nullOrMap(_indexOf);
+  T? get first => _field.bFirst(_sizeEach).nullOrMap(_indexOf);
 
   @override
-  T? get last => _field.pLast(_sizeEach).nullOrMap(_indexOf);
+  T? get last => _field.bLast(_sizeEach).nullOrMap(_indexOf);
 
   @override
   T? firstAfter(T index) => _field
-      .pFirstAfter(_positionOf(index), _shift, _mask, _sizeEach)
+      .bFirstAfter(_positionOf(index), _shift, _mask, _sizeEach)
       .nullOrMap(_indexOf);
 
   @override
   T? lastBefore(T index) => _field
-      .pLastBefore(_positionOf(index), _shift, _mask, _sizeEach)
+      .bLastBefore(_positionOf(index), _shift, _mask, _sizeEach)
       .nullOrMap(_indexOf);
 
   // Iterable<T> get availables => _field.mapPAvailable(_sizeEach, _indexOf);
@@ -285,10 +285,10 @@ mixin _MSetSlot<I, T>
 ///
 mixin _MSetBitsField<T> on _MBitsField implements _AFieldSet<T, T> {
   @override
-  void includesSub(T begin, [T? limit]) => _sub(_bitSet, begin, limit);
+  void includesSub(T begin, [T? limit]) => _sub(_pSet, begin, limit);
 
   @override
-  void excludesSub(T begin, [T? limit]) => _sub(_bitClear, begin, limit);
+  void excludesSub(T begin, [T? limit]) => _sub(_pClear, begin, limit);
 
   void _sub(void Function(int) consume, T from, T? limit);
 }

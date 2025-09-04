@@ -164,22 +164,22 @@ mixin _MFlagsScopedDatePositionDay
 ///
 ///
 mixin _MBitsField implements _AField, _AFieldBits {
-  bool _bitOn(int position) => _field.pOn(position, _shift, _mask);
+  bool _pOn(int position) => _field.pOn(position, _shift, _mask);
 
-  void _bitSet(int position) => _field.pSet(position, _shift, _mask);
+  void _pSet(int position) => _field.pSet(position, _shift, _mask);
 
-  void _bitClear(int position) => _field.pClear(position, _shift, _mask);
+  void _pClear(int position) => _field.pClear(position, _shift, _mask);
 }
 
 mixin _MBitsFieldMonthsDates
     implements _AField, _AFieldIdentical, _AFlagsScoped<(int, int)> {
-  bool _bitOn(int year, int month, int day) =>
+  bool _pOn(int year, int month, int day) =>
       _field[begin.monthsToYearMonth(year, month)] >> day - 1 & 1 == 1;
 
-  void _bitSet(int year, int month, int day) =>
+  void _pSet(int year, int month, int day) =>
       _field[begin.monthsToYearMonth(year, month)] |= 1 << day - 1;
 
-  void _bitClear(int year, int month, int day) =>
+  void _pClear(int year, int month, int day) =>
       _field[begin.monthsToYearMonth(year, month)] &= ~(1 << day - 1);
 
   @override
@@ -194,13 +194,13 @@ mixin _MFieldContainerPositionAble<I> on _MBitsField
   @override
   bool operator [](I index) {
     assert(validateIndex(index));
-    return _bitOn(_positionOf(index));
+    return _pOn(_positionOf(index));
   }
 
   @override
   void operator []=(I index, bool value) {
     assert(validateIndex(index));
-    value ? _bitSet(_positionOf(index)) : _bitClear(_positionOf(index));
+    value ? _pSet(_positionOf(index)) : _pClear(_positionOf(index));
   }
 }
 
@@ -209,15 +209,15 @@ mixin _MFieldContainerMonthsDates on _MFlagsContainerScopedDate<bool>
   @override
   bool operator []((int, int, int) index) {
     assert(validateIndex(index));
-    return _bitOn(index.$1, index.$2, index.$3);
+    return _pOn(index.$1, index.$2, index.$3);
   }
 
   @override
   void operator []=((int, int, int) index, bool value) {
     assert(validateIndex(index));
     value
-        ? _bitSet(index.$1, index.$2, index.$3)
-        : _bitClear(index.$1, index.$2, index.$3);
+        ? _pSet(index.$1, index.$2, index.$3)
+        : _pClear(index.$1, index.$2, index.$3);
   }
 }
 
@@ -370,7 +370,7 @@ mixin _MOnFlagsIndexSub<F, I, J> on _MFieldContainerPositionAble<I>
     assert(index.isRangeOpenUpper(0, spatial1));
     for (var indexSub in inclusion) {
       assert(_validateIndexSub(indexSub));
-      _bitSet(_positionOf(_indexMerge(index, indexSub)));
+      _pSet(_positionOf(_indexMerge(index, indexSub)));
     }
   }
 
@@ -379,7 +379,7 @@ mixin _MOnFlagsIndexSub<F, I, J> on _MFieldContainerPositionAble<I>
     assert(index.isRangeOpenUpper(0, spatial1));
     for (var indexSub in exclusion) {
       assert(_validateIndexSub(indexSub));
-      _bitClear(_positionOf(_indexMerge(index, indexSub)));
+      _pClear(_positionOf(_indexMerge(index, indexSub)));
     }
   }
 }
@@ -400,7 +400,7 @@ mixin _MOnFieldSpatial2 on _MOnFlagsIndexSub<Field, (int, int), int>
         start = index * spatial2,
         field = Field(spatial2);
     for (var i = 0; i < spatial2; i++) {
-      if (_bitOn(start + i)) field._bitSet(i);
+      if (_pOn(start + i)) field._pSet(i);
     }
     return field;
   }
@@ -429,7 +429,7 @@ mixin _MOnFieldSpatial3
       final begin = j * spatial3;
       for (var i = 0; i < spatial3; i++) {
         final p = begin + i;
-        if (_bitOn(start + p)) field._bitSet(p);
+        if (_pOn(start + p)) field._pSet(p);
       }
     }
     return field;
@@ -463,7 +463,7 @@ mixin _MOnFieldSpatial4
         final b2 = j * spatial4;
         for (var i = 0; i < spatial4; i++) {
           final p = b1 + b2 + i;
-          if (_bitOn(start + p)) result._bitSet(p);
+          if (_pOn(start + p)) result._pSet(p);
         }
       }
     }

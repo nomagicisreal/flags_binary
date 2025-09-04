@@ -7,6 +7,10 @@ void main() {
   field[(2, 1)] = true;
   print(field.firstAfter((2, 0)));
 
+  var i = 0;
+  print(i--);
+  print(--i);
+
   // final field = Field3D(3, 10, 15);
   // field.includesOn(2, [(1, 1), (9, 3), (4, 10)]);
   // field[(2, 1, 1)] = true;

@@ -45,9 +45,7 @@ mixin _MSetFieldMonthsDatesScoped
   int? lastInMonth(int year, int month) {
     assert(_isValidMonth(month));
     final field = _field, i = begin.monthsToYearMonth(year, month);
-    return i < 0 || i >= field.length
-        ? null
-        : field.bLastOf(i, _monthDaysOf(year, month));
+    return i < 0 || i >= field.length ? null : field.bLastOf(i);
   }
 
   ///
@@ -97,7 +95,7 @@ mixin _MSetFieldMonthsDatesScoped
       if (j >= length) return null;
       final dAfter = index.$3;
       if (dAfter < _monthDaysOf(y, m)) {
-        final i = firstOf(j, dAfter - 1);
+        final i = field.bFirstOfFrom(j, dAfter - 1);
         if (i != null) return (y, m, i + 1);
       }
     }
@@ -139,7 +137,7 @@ mixin _MSetFieldMonthsDatesScoped
     const january = DateTime.january, december = DateTime.december;
     final end = this.end, field = _field, lastOf = field.bLastOf;
     for (var y = end.$1, m = end.$2, j = field.length - 1; j >= 0; j--) {
-      final i = lastOf(j, _monthDaysOf(y, m) - 1);
+      final i = lastOf(j);
       if (i != null) return (y, m, i + 1);
       m--;
       if (m < january) {
@@ -166,14 +164,14 @@ mixin _MSetFieldMonthsDatesScoped
       y = yEnd;
       m = mEnd;
       j = length - 1;
-      final d = lastOf(j, _monthDaysOf(yEnd, mEnd));
+      final d = lastOf(j);
       if (d != null) return (y, m, d);
     } else {
       j = y == yEnd ? length - 1 : begin.monthsToYearMonth(y, m);
       if (j < 0) return null;
       final dBefore = index.$3;
       if (dBefore > 1) {
-        final i = lastOf(j, dBefore - 1);
+        final i = field.bLastOfTo(j, dBefore - 1);
         if (i != null) return (y, m, i + 1);
       }
     }
@@ -187,7 +185,7 @@ mixin _MSetFieldMonthsDatesScoped
         y++;
         m = january;
       }
-      final i = lastOf(j, _monthDaysOf(y, m));
+      final i = lastOf(j);
       if (i != null) return (y, m, i + 1);
     }
   }
@@ -199,7 +197,7 @@ mixin _MSetFieldMonthsDatesScoped
         mFirst = y == begin.$1 ? begin.$2 : DateTime.january,
         lastOf = _field.bLastOf;
     for (var m = mj.$1, j = mj.$2; m >= mFirst; m--, j++) {
-      final i = lastOf(j, _monthDaysOf(y, m) - 1);
+      final i = lastOf(j);
       if (i != null) return (y, m, i + 1);
     }
     return null;
@@ -393,7 +391,7 @@ mixin _MSetFieldMonthsDatesScoped
     }
 
     final field = _field,
-        datesOfFixed = field.datesForwardOfFixed,
+        datesOfFixed = field.datesForwardOfTo,
         indexOf = begin.monthsToYearMonth;
 
     // inside a month
@@ -438,11 +436,11 @@ mixin _MSetBitsFieldMonthsDates on _MBitsFieldMonthsDates
     implements _AFieldSet<(int, int, int), (int, int, int)> {
   @override
   void includesSub((int, int, int) begin, [(int, int, int)? limit]) =>
-      _sub(_bitSet, begin, limit);
+      _sub(_pSet, begin, limit);
 
   @override
   void excludesSub((int, int, int) begin, [(int, int, int)? limit]) =>
-      _sub(_bitClear, begin, limit);
+      _sub(_pClear, begin, limit);
 
   void _sub(
     void Function(int, int, int) consume,
