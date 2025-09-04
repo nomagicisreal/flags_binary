@@ -39,13 +39,13 @@ mixin _MSetFieldMonthsDatesScoped
   int? firstInMonth(int year, int month) {
     assert(_isValidMonth(month));
     final field = _field, i = begin.monthsToYearMonth(year, month);
-    return i < 0 || i >= field.length ? null : field.bFirstOf(i);
+    return i < 0 || i >= field.length ? null : field.bForwardOf(i);
   }
 
   int? lastInMonth(int year, int month) {
     assert(_isValidMonth(month));
     final field = _field, i = begin.monthsToYearMonth(year, month);
-    return i < 0 || i >= field.length ? null : field.bLastOf(i);
+    return i < 0 || i >= field.length ? null : field.bBackwardOf(i);
   }
 
   ///
@@ -59,7 +59,7 @@ mixin _MSetFieldMonthsDatesScoped
     final begin = this.begin,
         field = _field,
         length = field.length,
-        firstOf = field.bFirstOf;
+        firstOf = field.bForwardOf;
     for (var y = begin.$1, m = begin.$2, j = 0; j < length; j++) {
       final i = firstOf(j);
       if (i != null) return (y, m, i + 1);
@@ -81,7 +81,7 @@ mixin _MSetFieldMonthsDatesScoped
         mBegin = begin.$2,
         field = _field,
         length = field.length,
-        firstOf = field.bFirstOf;
+        firstOf = field.bForwardOf;
 
     int j;
     if (y < yBegin || (y == yBegin && m < mBegin)) {
@@ -95,7 +95,7 @@ mixin _MSetFieldMonthsDatesScoped
       if (j >= length) return null;
       final dAfter = index.$3;
       if (dAfter < _monthDaysOf(y, m)) {
-        final i = field.bFirstOfFrom(j, dAfter - 1);
+        final i = field.bForwardOfFrom(j, dAfter - 1);
         if (i != null) return (y, m, i + 1);
       }
     }
@@ -119,7 +119,7 @@ mixin _MSetFieldMonthsDatesScoped
     if (mj == null) return null;
     final end = this.end,
         mLast = y == end.$1 ? end.$2 : DateTime.december,
-        firstOf = _field.bFirstOf;
+        firstOf = _field.bForwardOf;
     for (var m = mj.$1, j = mj.$2; m <= mLast; m++, j++) {
       final i = firstOf(j);
       if (i != null) return (y, m, i + 1);
@@ -135,7 +135,7 @@ mixin _MSetFieldMonthsDatesScoped
   @override
   (int, int, int)? get last {
     const january = DateTime.january, december = DateTime.december;
-    final end = this.end, field = _field, lastOf = field.bLastOf;
+    final end = this.end, field = _field, lastOf = field.bBackwardOf;
     for (var y = end.$1, m = end.$2, j = field.length - 1; j >= 0; j--) {
       final i = lastOf(j);
       if (i != null) return (y, m, i + 1);
@@ -156,7 +156,7 @@ mixin _MSetFieldMonthsDatesScoped
         mEnd = end.$2,
         field = _field,
         length = field.length,
-        lastOf = field.bLastOf;
+        lastOf = field.bBackwardOf;
     var y = index.$1, m = index.$2;
 
     int j;
@@ -171,7 +171,7 @@ mixin _MSetFieldMonthsDatesScoped
       if (j < 0) return null;
       final dBefore = index.$3;
       if (dBefore > 1) {
-        final i = field.bLastOfTo(j, dBefore - 1);
+        final i = field.bBackwardOfFrom(j, dBefore - 1);
         if (i != null) return (y, m, i + 1);
       }
     }
@@ -195,7 +195,7 @@ mixin _MSetFieldMonthsDatesScoped
     if (mj == null) return null;
     final begin = this.begin,
         mFirst = y == begin.$1 ? begin.$2 : DateTime.january,
-        lastOf = _field.bLastOf;
+        lastOf = _field.bBackwardOf;
     for (var m = mj.$1, j = mj.$2; m >= mFirst; m--, j++) {
       final i = lastOf(j);
       if (i != null) return (y, m, i + 1);
@@ -213,7 +213,7 @@ mixin _MSetFieldMonthsDatesScoped
     final begin = this.begin,
         field = _field,
         length = field.length,
-        firstOf = field.bFirstOf;
+        firstOf = field.bForwardOf;
     var y = begin.$1, m = begin.$2, j = 0;
 
     while (true) {
@@ -242,7 +242,7 @@ mixin _MSetFieldMonthsDatesScoped
       final begin = this.begin,
           field = _field,
           length = field.length,
-          firstOf = field.bFirstOf;
+          firstOf = field.bForwardOf;
       var y = begin.$1, m = begin.$2, j = 0;
       while (true) {
         if (firstOf(j) != null) yield (y, m);
@@ -259,7 +259,7 @@ mixin _MSetFieldMonthsDatesScoped
     // year != null
     final mj = _firstMonthIndexedIn(year);
     if (mj == null) return;
-    final firstOf = _field.bFirstOf;
+    final firstOf = _field.bForwardOf;
     final end = this.end, mLast = year == end.$1 ? end.$2 : DateTime.december;
     for (var m = mj.$1, j = mj.$2; m <= mLast; m++, j++) {
       if (firstOf(j) != null) yield (year, m);
@@ -391,7 +391,7 @@ mixin _MSetFieldMonthsDatesScoped
     }
 
     final field = _field,
-        datesOfFixed = field.datesForwardOfTo,
+        datesOfFixed = field.datesForwardOfBetween,
         indexOf = begin.monthsToYearMonth;
 
     // inside a month

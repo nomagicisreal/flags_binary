@@ -23,18 +23,18 @@ part of '../flags_binary.dart';
 mixin _MSetField
     implements _AFlagsSet<int, int>, _AField, _AFieldIdentical, _AFieldBits {
   @override
-  int? get first => _field.bFirst(_sizeEach);
+  int? get first => _field.bForward(_sizeEach);
 
   @override
-  int? get last => _field.bLast(_sizeEach);
+  int? get last => _field.bBackward(_sizeEach);
 
   @override
   int? firstAfter(int index) =>
-      _field.bFirstAfter(index, _shift, _mask, _sizeEach);
+      _field.bForwardAfter(index, _shift, _mask, _sizeEach);
 
   @override
   int? lastBefore(int index) =>
-      _field.bLastBefore(index, _shift, _mask, _sizeEach);
+      _field.bBackwardBefore(index, _shift, _mask, _sizeEach);
 
   @override
   Iterable<int> get availables => _field.pAvailable(_sizeEach);
@@ -80,19 +80,19 @@ mixin _MSetFieldIndexable<T> on _MFieldContainerPositionAble<T>
   T _indexOf(int position);
 
   @override
-  T? get first => _field.bFirst(_sizeEach).nullOrMap(_indexOf);
+  T? get first => _field.bForward(_sizeEach).nullOrMap(_indexOf);
 
   @override
-  T? get last => _field.bLast(_sizeEach).nullOrMap(_indexOf);
+  T? get last => _field.bBackward(_sizeEach).nullOrMap(_indexOf);
 
   @override
   T? firstAfter(T index) => _field
-      .bFirstAfter(_positionOf(index), _shift, _mask, _sizeEach)
+      .bForwardAfter(_positionOf(index), _shift, _mask, _sizeEach)
       .nullOrMap(_indexOf);
 
   @override
   T? lastBefore(T index) => _field
-      .bLastBefore(_positionOf(index), _shift, _mask, _sizeEach)
+      .bBackwardBefore(_positionOf(index), _shift, _mask, _sizeEach)
       .nullOrMap(_indexOf);
 
   // Iterable<T> get availables => _field.mapPAvailable(_sizeEach, _indexOf);
