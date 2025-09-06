@@ -50,6 +50,14 @@ abstract class _AFlagsSpatial4 implements _AFlagsSpatial3 {
   int get spatial4;
 }
 
+///
+/// All flags index should start from 1, because all the flags implementation required bits.
+/// it's impossible for flags implementation to have [int.bitLength] < 1.
+/// start from 1 prevents subtraction finding last index, [List.length] - 1.
+/// see also [TypedIntList.bLastOf], [TypedIntList.bitsBackwardOf], ...
+/// if started from 0, yielding iterable elements from the functions be like [TypedIntList.bitsBackwardOf] required '- 1'
+/// for each iterable element.
+///
 abstract class _AFlagsPositionAble<I> implements _PFlags {
   int _positionOf(I index);
 }

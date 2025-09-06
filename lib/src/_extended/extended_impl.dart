@@ -69,8 +69,8 @@ bool _isValidMonth(int month) =>
 bool _isValidDay(int year, int month, int day) =>
     day >= 1 && day <= _monthDaysOf(year, month);
 
-bool _isInvalidDay(int year, int month, int day) =>
-    day < 1 || day > _monthDaysOf(year, month);
+// bool _isInvalidDay(int year, int month, int day) =>
+//     day < 1 || day > _monthDaysOf(year, month);
 
 bool _isValidDate((int, int, int) date) {
   final month = date.$2;
@@ -110,7 +110,7 @@ bool _reduce_isLessOrEqual(int a, int b) => a <= b;
 ///
 ///
 extension _IntExtension on int {
-  bool isRangeOpenUpper(num lower, num upper) => this >= lower && this < upper;
+  bool isRangeOpenLower(num lower, num upper) => this > lower && this <= upper;
 }
 
 ///

@@ -23,55 +23,56 @@ part of '../flags_binary.dart';
 mixin _MSetField
     implements _AFlagsSet<int, int>, _AField, _AFieldIdentical, _AFieldBits {
   @override
-  int? get first => _field.bForward(_sizeEach);
+  int? get first => _field.bFirst(_sizeEach);
 
   @override
-  int? get last => _field.bBackward(_sizeEach);
+  int? get last => _field.bLast(_sizeEach);
 
   @override
   int? firstAfter(int index) =>
-      _field.bForwardAfter(index, _shift, _mask, _sizeEach);
+      _field.bFirstAfter(index, _shift, _mask, _sizeEach);
 
   @override
   int? lastBefore(int index) =>
-      _field.bBackwardBefore(index, _shift, _mask, _sizeEach);
+      _field.bLastBefore(index, _shift, _mask, _sizeEach);
 
   @override
-  Iterable<int> get availables => _field.pAvailable(_sizeEach);
+  Iterable<int> get availables => _field.bitsForward(_sizeEach);
 
   @override
   Iterable<int> availablesRecent([int from = 0, int? to]) {
     assert(from >= 0 && (to == null || from <= to));
-    final int shift = _shift, mask = _mask, jFrom, iFrom;
-    final int? jTo, iTo;
-    if (from == 0) {
-      jFrom = 0;
-      iFrom = 0;
-    } else {
-      jFrom = from >> shift;
-      iFrom = from & mask;
-    }
-    if (to == null) {
-      jTo = null;
-      iTo = null;
-    } else {
-      jTo = to >> shift;
-      iTo = to & mask;
-    }
-    return _field.pAvailableForwardTo(_sizeEach, jFrom, iFrom, jTo, iTo);
+    throw UnimplementedError();
+    // final int shift = _shift, mask = _mask, jFrom, iFrom, jTo, iTo;
+    // if (from == 0) {
+    //   jFrom = 0;
+    //   iFrom = 0;
+    // } else {
+    //   jFrom = from >> shift;
+    //   iFrom = from & mask;
+    // }
+    // if (to == null) {
+    //   jTo = _field.length - 1;
+    //   iTo = _sizeEach - 1;
+    // } else {
+    //   jTo = to >> shift;
+    //   iTo = to & mask;
+    // }
+    // return _field.bitsForwardBetween(_sizeEach, jFrom, iFrom, jTo, iTo);
   }
 
   @override
   Iterable<int> availablesLatest(int from, [int to = 0]) {
     assert(to >= 0 && to <= from);
-    final shift = _shift, mask = _mask;
-    return _field.pAvailableBackwardTo(
-      _sizeEach,
-      from >> shift,
-      from & mask,
-      to >> shift,
-      to & mask,
-    );
+    throw UnimplementedError();
+    // final shift = _shift, mask = _mask;
+    // return _field.bitsBackwardBetween(
+    //   _sizeEach,
+    //   from >> shift,
+    //   from & mask,
+    //   to >> shift,
+    //   to & mask,
+    // );
   }
 }
 
@@ -80,19 +81,19 @@ mixin _MSetFieldIndexable<T> on _MFieldContainerPositionAble<T>
   T _indexOf(int position);
 
   @override
-  T? get first => _field.bForward(_sizeEach).nullOrMap(_indexOf);
+  T? get first => _field.bFirst(_sizeEach).nullOrMap(_indexOf);
 
   @override
-  T? get last => _field.bBackward(_sizeEach).nullOrMap(_indexOf);
+  T? get last => _field.bLast(_sizeEach).nullOrMap(_indexOf);
 
   @override
   T? firstAfter(T index) => _field
-      .bForwardAfter(_positionOf(index), _shift, _mask, _sizeEach)
+      .bFirstAfter(_positionOf(index), _shift, _mask, _sizeEach)
       .nullOrMap(_indexOf);
 
   @override
   T? lastBefore(T index) => _field
-      .bBackwardBefore(_positionOf(index), _shift, _mask, _sizeEach)
+      .bLastBefore(_positionOf(index), _shift, _mask, _sizeEach)
       .nullOrMap(_indexOf);
 
   // Iterable<T> get availables => _field.mapPAvailable(_sizeEach, _indexOf);

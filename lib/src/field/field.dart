@@ -76,7 +76,7 @@ abstract class Field2D extends FieldParent
   @override
   (int, int) _indexOf(int position) {
     final s2 = spatial2;
-    assert(position.isRangeOpenUpper(0, spatial1 * s2));
+    assert(position.isRangeOpenLower(0, spatial1 * s2));
     return (position ~/ s2, position % s2);
   }
 
@@ -118,7 +118,7 @@ abstract class Field3D extends FieldParent
   @override
   (int, int, int) _indexOf(int position) {
     final s2 = spatial2, s3 = spatial3;
-    assert(position.isRangeOpenUpper(0, spatial1 * s2 * s3));
+    assert(position.isRangeOpenLower(0, spatial1 * s2 * s3));
     final p2 = position ~/ s3;
     return (p2 ~/ s2, p2 % s2, position % s3);
   }
@@ -174,7 +174,7 @@ abstract class Field4D extends FieldParent
   @override
   (int, int, int, int) _indexOf(int position) {
     final s1 = spatial1, s2 = spatial2, s3 = spatial3;
-    assert(position.isRangeOpenUpper(0, s1 * s2 * s3 * spatial4));
+    assert(position.isRangeOpenLower(0, s1 * s2 * s3 * spatial4));
     final p2 = position ~/ s1, p3 = p2 ~/ s2;
     return (p3 ~/ s3, p3 % s3, p2 % s2, position % s1);
   }
