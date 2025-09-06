@@ -64,15 +64,14 @@ mixin _MSetField
   @override
   Iterable<int> availablesLatest(int from, [int to = 0]) {
     assert(to >= 0 && to <= from);
-    throw UnimplementedError();
-    // final shift = _shift, mask = _mask;
-    // return _field.bitsBackwardBetween(
-    //   _sizeEach,
-    //   from >> shift,
-    //   from & mask,
-    //   to >> shift,
-    //   to & mask,
-    // );
+    final shift = _shift, mask = _mask, bFrom = from - 1;
+    return _field.bitsBackwardBetween(
+      _sizeEach,
+      bFrom >> shift,
+      bFrom & mask,
+      to >> shift,
+      to & mask,
+    );
   }
 }
 
@@ -291,7 +290,7 @@ mixin _MSetBitsField<T> on _MBitsField implements _AFieldSet<T, T> {
   @override
   void excludesSub(T begin, [T? limit]) => _sub(_pClear, begin, limit);
 
-  void _sub(void Function(int) consume, T from, T? limit);
+  void _sub(void Function(int) consume, T from, T? last);
 }
 
 ///
@@ -300,11 +299,11 @@ mixin _MSetBitsField<T> on _MBitsField implements _AFieldSet<T, T> {
 mixin _MSetBitsFieldSpatial1
     implements _MFlagsContainerSpatial1<bool>, _MSetBitsField<int> {
   @override
-  void _sub(void Function(int) consume, int from, int? limit) {
-    assert(validateIndex(from) && (limit == null || validateIndex(limit)));
-    final l = limit ?? spatial1;
-    for (; from < l; from++) {
-      consume(from);
+  void _sub(void Function(int) consume, int from, int? last) {
+    assert(validateIndex(from) && (last == null || (validateIndex(last))));
+    final iLast = last ?? spatial1;
+    for (var i = from; i <= iLast; i++) {
+      consume(i);
     }
   }
 }
@@ -312,21 +311,22 @@ mixin _MSetBitsFieldSpatial1
 mixin _MSetBitsFieldSpatial2
     implements _MFlagsContainerSpatial2<bool>, _MSetBitsField<(int, int)> {
   @override
-  void _sub(void Function(int) consume, (int, int) from, (int, int)? limit) {
-    assert(validateIndex(from) && (limit == null || validateIndex(limit)));
+  void _sub(void Function(int) consume, (int, int) from, (int, int)? last) {
+    assert(validateIndex(from) && (last == null || validateIndex(last)));
     final spatial2 = this.spatial2,
-        end = limit ?? (spatial1 - 1, spatial2 - 1),
+        end = last ?? (spatial1, spatial2),
+        jFrom = from.$1,
         jEnd = end.$1,
         iEnd = end.$2;
-    var jFrom = from.$1, iFrom = from.$2, index = jFrom * spatial2 + iFrom;
+    var i = from.$2, index = (jFrom - 1) * spatial2 + i;
 
     if (jFrom < jEnd) {
-      index = consume.iteratingI(iFrom, spatial2, index);
-      index = consume.iteratingJ(jFrom + 1, jEnd, spatial2, index);
-      iFrom = 0;
+      index = consume.iteratingI(i, spatial2, index);
+      index = consume.iteratingJ(jFrom + 1, jEnd - 1, spatial2, index);
+      i = 1;
     }
 
-    for (; iFrom <= iEnd; iFrom++, index++) {
+    for (; i <= iEnd; i++, index++) {
       consume(index);
     }
   }
@@ -338,35 +338,41 @@ mixin _MSetBitsFieldSpatial3
   void _sub(
     void Function(int) consume,
     (int, int, int) from,
-    (int, int, int)? limit,
+    (int, int, int)? last,
   ) {
-    assert(validateIndex(from) && (limit == null || validateIndex(limit)));
+    assert(validateIndex(from) && (last == null || validateIndex(last)));
     final spatial2 = this.spatial2,
         spatial3 = this.spatial3,
-        end = limit ?? (spatial1 - 1, spatial2 - 1, spatial3 - 1),
+        end = last ?? (spatial1, spatial2, spatial3),
+        kFrom = from.$1,
         kEnd = end.$1,
         jEnd = end.$2,
         iEnd = end.$3;
-    var kFrom = from.$1,
-        jFrom = from.$2,
-        iFrom = from.$3,
-        index = (kFrom * spatial2 + jFrom) * spatial3 + iFrom;
+    var j = from.$2,
+        i = from.$3,
+        index = ((kFrom - 1) * spatial2 + j - 1) * spatial3 + i;
 
     if (kFrom < kEnd) {
-      index = consume.iteratingI(iFrom, spatial3, index);
-      index = consume.iteratingJ(jFrom + 1, spatial2, spatial3, index);
-      index = consume.iteratingK(kFrom + 1, kEnd, spatial2, spatial3, index);
-      jFrom = 0;
-      iFrom = 0;
+      index = consume.iteratingI(i, spatial3, index);
+      index = consume.iteratingJ(j + 1, spatial2, spatial3, index);
+      index = consume.iteratingK(
+        kFrom + 1,
+        kEnd - 1,
+        spatial2,
+        spatial3,
+        index,
+      );
+      j = 1;
+      i = 1;
     }
 
-    if (jFrom < jEnd) {
-      index = consume.iteratingI(iFrom, spatial3, index);
-      index = consume.iteratingJ(jFrom + 1, spatial2, spatial3, index);
-      iFrom = 0;
+    if (j < jEnd) {
+      index = consume.iteratingI(i, spatial3, index);
+      index = consume.iteratingJ(j + 1, jEnd - 1, spatial3, index);
+      i = 1;
     }
 
-    for (; iFrom <= iEnd; iFrom++, index++) {
+    for (; i <= iEnd; i++, index++) {
       consume(index);
     }
   }
@@ -380,48 +386,48 @@ mixin _MSetBitsFieldSpatial4
   void _sub(
     void Function(int) consume,
     (int, int, int, int) from,
-    (int, int, int, int)? limit,
+    (int, int, int, int)? last,
   ) {
-    assert(validateIndex(from) && (limit == null || validateIndex(limit)));
+    assert(validateIndex(from) && (last == null || validateIndex(last)));
     final s2 = spatial2,
         s3 = spatial3,
         s4 = spatial4,
-        end = limit ?? (spatial1 - 1, s2 - 1, s3 - 1, s4 - 1),
+        end = last ?? (spatial1, s2, s3, s4),
+        lFrom = from.$1,
         lEnd = end.$1,
         kEnd = end.$2,
         jEnd = end.$3,
         iEnd = end.$4;
-    var lFrom = from.$1,
-        kFrom = from.$2,
-        jFrom = from.$3,
-        iFrom = from.$4,
-        index = ((lFrom * s2 + kFrom) * s3 + jFrom) * s4 + iFrom;
+    var k = from.$2,
+        j = from.$3,
+        i = from.$4,
+        index = (((lFrom - 1) * s2 + k - 1) * s3 + j - 1) * s4 + i;
 
     if (lFrom < lEnd) {
-      index = consume.iteratingI(iFrom, s4, index);
-      index = consume.iteratingJ(jFrom + 1, s3, s4, index);
-      index = consume.iteratingK(kFrom + 1, s2, s3, s4, index);
-      index = consume.iteratingL(lFrom + 1, lEnd, s2, s3, s4, index);
-      kFrom = 0;
-      jFrom = 0;
-      iFrom = 0;
+      index = consume.iteratingI(i, s4, index);
+      index = consume.iteratingJ(j + 1, s3, s4, index);
+      index = consume.iteratingK(k + 1, s2, s3, s4, index);
+      index = consume.iteratingL(lFrom + 1, lEnd - 1, s2, s3, s4, index);
+      k = 0;
+      j = 0;
+      i = 0;
     }
 
-    if (kFrom < kEnd) {
-      index = consume.iteratingI(iFrom, s4, index);
-      index = consume.iteratingJ(jFrom + 1, s3, s4, index);
-      index = consume.iteratingK(kFrom + 1, kEnd, s3, s4, index);
-      jFrom = 0;
-      iFrom = 0;
+    if (k < kEnd) {
+      index = consume.iteratingI(i, s4, index);
+      index = consume.iteratingJ(j + 1, s3, s4, index);
+      index = consume.iteratingK(k + 1, kEnd - 1, s3, s4, index);
+      j = 0;
+      i = 0;
     }
 
-    if (jFrom < jEnd) {
-      index = consume.iteratingI(iFrom, s4, index);
-      index = consume.iteratingJ(jFrom + 1, jEnd, s4, index);
-      iFrom = 0;
+    if (j < jEnd) {
+      index = consume.iteratingI(i, s4, index);
+      index = consume.iteratingJ(j + 1, jEnd - 1, s4, index);
+      i = 0;
     }
 
-    for (; iFrom <= iEnd; iFrom++, index++) {
+    for (; i <= iEnd; i++, index++) {
       consume(index);
     }
   }

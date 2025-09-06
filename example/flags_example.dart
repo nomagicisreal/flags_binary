@@ -1,19 +1,18 @@
-import 'package:flags_binary/flags_binary.dart';
+// import 'package:flags_binary/flags_binary.dart';
 
 void main() {
-  // final field = Field2D(10, 20);
+  // final field = Field(99);
+  // field.includesSub(20, 90);
+  // final field = Field2D(10, 22);
   // field.includesOn(5, [1, 2, 7, 9, 18]);
-  final field = Field(100);
-  field.includesSub(10, 20);
+  // final field = Field3D(2, 10, 15);
+  // field.includesOn(2, [(1, 1), (9, 3), (4, 10)]);
 
-  print(field.availablesLatest(13));
-  // print(field.toString());
+  // print(field.availablesLatest(25));
   // field[(2, 1)] = true;
   // print(field.firstAfter((2, 0)));
+  // print(field.toString());
 
-  // final field = Field3D(3, 10, 15);
-  // field.includesOn(2, [(1, 1), (9, 3), (4, 10)]);
-  // field[(2, 1, 1)] = true;
   // print(field.firstAfter((2, 1, 0)));
   // print(field.toString());
 

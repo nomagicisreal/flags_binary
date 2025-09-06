@@ -61,7 +61,7 @@ sealed class _PFlags {
         final _ = switch (flags) {
           Slot() || Slot2D() || Slot3D() || Slot4D() => () {
             if (flags is Slot) {
-              final pad = '${length - 1}'.length + 1;
+              final pad = '$length'.length + 1;
               padOverallSpace = 6 + pad;
               buffer.writeRepeat(padOverallSpace, '-', true);
               buffer.writeln('space: $length');
@@ -69,9 +69,9 @@ sealed class _PFlags {
               for (var i = 0; i < length; i++) {
                 if (i & 3 == 0) {
                   buffer.write('|');
-                  final end = math.min(i + 3, length - 1);
+                  final end = math.min(i + 4, length);
                   if (end == i) {
-                    buffer.write('$i'.padLeft(pad + 3));
+                    buffer.write('${i + 1}'.padLeft(pad + 3));
                   } else {
                     buffer.write('$i'.padLeft(pad + 1));
                     buffer.write('~$end');
@@ -79,7 +79,7 @@ sealed class _PFlags {
                 }
                 buffer.writeln();
                 buffer.write('| ');
-                buffer.write('$i'.padRight(pad));
+                buffer.write('${i + 1}'.padRight(pad));
                 buffer.write(':');
                 buffer.write(itemOf(i));
                 if (i + 1 & 3 == 0) {
@@ -101,14 +101,14 @@ sealed class _PFlags {
             if (flags is Slot2D) {
               final s1 = flags.spatial1,
                   s2 = flags.spatial2,
-                  padJ = '${s1 - 1}'.length + 1,
-                  padI = '${s2 - 1}'.length + 1,
+                  padJ = '$s1'.length + 1,
+                  padI = '$s2'.length + 1,
                   padding = [padJ, padI];
               padOverallSpace = padJ + padI + 10;
               writeTitle([s1, s2], padding);
-              int start = 0;
-              for (var j = 0; j < s1; j++) {
-                for (var i = 0; i < s2; i++) {
+              int start = -1;
+              for (var j = 1; j <= s1; j++) {
+                for (var i = 1; i <= s2; i++) {
                   buffer.writeRecord([j, i], padding);
                   buffer.write(' :');
                   buffer.writeln(itemOf(start + i));
@@ -122,16 +122,16 @@ sealed class _PFlags {
               final s1 = flags.spatial1,
                   s2 = flags.spatial2,
                   s3 = flags.spatial3,
-                  padK = '${s1 - 1}'.length + 1,
-                  padJ = '${s2 - 1}'.length + 1,
-                  padI = '${s3 - 1}'.length + 1,
+                  padK = '$s1'.length + 1,
+                  padJ = '$s2'.length + 1,
+                  padI = '$s3'.length + 1,
                   padding = [padK, padJ, padI];
               padOverallSpace = padK + padJ + padI + 11;
               writeTitle([s1, s2, s3], padding);
-              int start = 0;
-              for (var k = 0; k < s1; k++) {
-                for (var j = 0; j < s2; j++) {
-                  for (var i = 0; i < s3; i++) {
+              int start = -1;
+              for (var k = 1; k <= s1; k++) {
+                for (var j = 1; j <= s2; j++) {
+                  for (var i = 1; i <= s3; i++) {
                     buffer.writeRecord([k, j, i], padding);
                     buffer.write(' :');
                     buffer.writeln(itemOf(start + i));
@@ -147,18 +147,18 @@ sealed class _PFlags {
                   s2 = flags.spatial2,
                   s3 = flags.spatial3,
                   s4 = flags.spatial4,
-                  padL = '${s1 - 1}'.length + 1,
-                  padK = '${s2 - 1}'.length + 1,
-                  padJ = '${s3 - 1}'.length + 1,
-                  padI = '${s4 - 1}'.length + 1,
+                  padL = '$s1'.length + 1,
+                  padK = '$s2'.length + 1,
+                  padJ = '$s3'.length + 1,
+                  padI = '$s4'.length + 1,
                   padding = [padL, padK, padJ, padI];
               padOverallSpace = padL + padK + padJ + padI + 12;
               writeTitle([s1, s2, s3, s4], padding);
-              int start = 0;
-              for (var l = 0; l < s1; l++) {
-                for (var k = 0; k < s2; k++) {
-                  for (var j = 0; j < s3; j++) {
-                    for (var i = 0; i < s4; i++) {
+              int start = -1;
+              for (var l = 1; l <= s1; l++) {
+                for (var k = 1; k <= s2; k++) {
+                  for (var j = 1; j <= s3; j++) {
+                    for (var i = 1; i <= s4; i++) {
                       buffer.writeRecord([l, k, j, i], padding);
                       buffer.write(' :');
                       buffer.writeln(itemOf(start + i));
@@ -188,20 +188,20 @@ sealed class _PFlags {
               SlotParent() => 0,
               Field() =>
                 3 +
-                    '${instance.spatial1 - 1}'.length * 2 +
+                    '${instance.spatial1}'.length * 2 +
                     4 +
                     (instance._sizeEach + 3 >> 2) * 5 +
                     2,
               Field2D() =>
                 2 +
-                    '${instance.spatial1 - 1}'.length +
+                    '${instance.spatial1}'.length +
                     2 +
                     instance.spatial2 +
                     (instance.spatial2 + 3 >> 2) +
                     2,
               Field3D() =>
                 2 +
-                    '${instance.spatial2 - 1}'.length +
+                    '${instance.spatial2}'.length +
                     2 +
                     instance.spatial3 +
                     (instance.spatial3 + 3 >> 2) +
@@ -209,7 +209,7 @@ sealed class _PFlags {
 
               Field4D() =>
                 2 +
-                    '${instance.spatial3 - 1}'.length +
+                    '${instance.spatial3}'.length +
                     2 +
                     instance.spatial4 +
                     (instance.spatial4 + 3 >> 2) +
@@ -236,7 +236,7 @@ sealed class _PFlags {
             if (flags is Field) {
               final spatial1 = flags.spatial1,
                   limit = field.length,
-                  pad = '${sizeEach * field.length - 1}'.length + 1,
+                  pad = '${sizeEach * field.length}'.length + 1,
                   jLast = field.length - 1,
                   last = spatial1 & flags._mask;
 
@@ -250,14 +250,14 @@ sealed class _PFlags {
                   predicate = _predicator_less(sizeEach);
                   padAfterBits = 1;
                 } else {
-                  end = '${spatial1 - 1}';
+                  end = '$spatial1';
                   predicate = _predicator_additionLess(start, spatial1);
                   padAfterBits =
                       1 + (sizeEach >> 2) * 5 - last - (last + 3 >> 2);
                 }
 
                 buffer.write('|');
-                buffer.write('$start'.padLeft(pad));
+                buffer.write('${start + 1}'.padLeft(pad));
                 buffer.write(' ~');
                 buffer.write(end.padLeft(pad));
                 buffer.write(' :');
@@ -279,22 +279,23 @@ sealed class _PFlags {
             }
 
             void fieldFlags2(
-              int spatial1,
-              int spatial2,
+              int nrow,
+              int ncol,
               int mask, [
               int l = 0,
               int pass = 0,
             ]) {
-              final pad = '${spatial1 - 1}'.length + 1,
-                  limit = spatial2 - 1 >> 2,
-                  padAfterBits = 1 + (spatial2 & 3) + 1;
+              final pad = '$nrow'.length + 1,
+                  remain4 = ncol & 3,
+                  limit = remain4 == 0 ? (ncol >> 2) - 1 : ncol >> 2,
+                  padAfterBits = 1 + remain4 + 1;
 
               buffer.write('|'.padRight(pad + 3));
               var chunk = 0;
               for (; chunk < limit; chunk++) {
-                buffer.write(' ${chunk * 4}'.padRight(5));
+                buffer.write(' ${chunk * 4 + 1}'.padRight(5));
               }
-              buffer.write(' ${chunk * 4}'.padRight(padAfterBits));
+              buffer.write(' ${chunk * 4 + 1}'.padRight(padAfterBits));
               buffer.writeln('|');
 
               buffer.write('|'.padRight(pad + 3));
@@ -304,29 +305,18 @@ sealed class _PFlags {
               buffer.write(' v'.padRight(padAfterBits));
               buffer.writeln('|');
 
-              var bits = field[l];
-              if (l != 0) {
-                bits >> pass;
-                l = 1;
-              }
-              final findNext = field.length > 1;
-              for (var j = 0; j < spatial1; j++) {
+              var bits = field[l] >> pass;
+              for (var j = 0; j < nrow; j++) {
                 buffer.write('|');
-                buffer.write('$j'.padLeft(pad));
+                buffer.write('${j + 1}'.padLeft(pad));
                 buffer.write(' :');
-                var i = 0;
-                while (i < spatial2) {
-                  if (i % 4 == 0) buffer.write(' ');
+                final start = pass + j * ncol;
+                var i = 1;
+                while (i <= ncol) {
+                  if (i & 3 == 1) buffer.write(' ');
                   buffer.writeBit(bits);
                   bits >>= 1;
-                  i++;
-                  if (findNext) {
-                    if ((j * spatial2 + pass + i) & mask == 0) {
-                      bits = field[l];
-                      pass = 0;
-                      l++;
-                    }
-                  }
+                  if (start + ++i & mask == 1) bits = field[++l];
                 }
                 buffer.writeln(' |');
               }

@@ -101,7 +101,7 @@ mixin _MFlagsContainerSpatial2<T>
   @override
   int _positionOf((int, int) index) {
     assert(validateIndex(index));
-    return index.$1 * spatial2 + index.$2;
+    return (index.$1 - 1) * spatial2 + index.$2;
   }
 }
 
@@ -119,7 +119,7 @@ mixin _MFlagsContainerSpatial3<T>
   @override
   int _positionOf((int, int, int) index) {
     assert(validateIndex(index));
-    return (index.$1 * spatial2 + index.$2) * spatial3 + index.$3;
+    return ((index.$1 - 1) * spatial2 + index.$2 - 1) * spatial3 + index.$3;
   }
 }
 
@@ -138,7 +138,10 @@ mixin _MFlagsContainerSpatial4<T>
   @override
   int _positionOf((int, int, int, int) index) {
     assert(validateIndex(index));
-    return ((index.$1 * spatial2 + index.$2) * spatial3 + index.$3) * spatial4 +
+    return (((index.$1 - 1) * spatial2 + index.$2 - 1) * spatial3 +
+                index.$3 -
+                1) *
+            spatial4 +
         index.$4;
   }
 }
@@ -397,9 +400,9 @@ mixin _MOnFieldSpatial2 on _MOnFlagsIndexSub<Field, (int, int), int>
   Field collapseOn(int index) {
     assert(index.isRangeOpenLower(0, spatial1));
     final spatial2 = this.spatial2,
-        start = index * spatial2,
+        start = (index - 1) * spatial2,
         field = Field(spatial2);
-    for (var i = 0; i < spatial2; i++) {
+    for (var i = 1; i <= spatial2; i++) {
       if (_pOn(start + i)) field._pSet(i);
     }
     return field;
@@ -424,10 +427,10 @@ mixin _MOnFieldSpatial3
     final spatial2 = this.spatial2,
         spatial3 = this.spatial3,
         field = Field2D(spatial2, spatial3),
-        start = index * spatial2 * spatial3;
+        start = (index - 1) * spatial2 * spatial3;
     for (var j = 0; j < spatial2; j++) {
       final begin = j * spatial3;
-      for (var i = 0; i < spatial3; i++) {
+      for (var i = 1; i <= spatial3; i++) {
         final p = begin + i;
         if (_pOn(start + p)) field._pSet(p);
       }
@@ -461,7 +464,7 @@ mixin _MOnFieldSpatial4
       final b1 = k * spatial3;
       for (var j = 0; j < spatial3; j++) {
         final b2 = j * spatial4;
-        for (var i = 0; i < spatial4; i++) {
+        for (var i = 1; i <= spatial4; i++) {
           final p = b1 + b2 + i;
           if (_pOn(start + p)) result._pSet(p);
         }

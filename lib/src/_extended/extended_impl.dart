@@ -40,7 +40,7 @@ bool Function(int) _predicator_less(int a) =>
     (v) => v < a;
 
 bool Function(int) _predicator_additionLess(int a, int b) =>
-    (v) => a + v < b;
+        (v) => a + v < b;
 
 ///
 ///
@@ -397,16 +397,16 @@ extension _Record3Int on (int, int, int) {
 // }
 
 extension _ConsumeIntAllExtension on void Function(int) {
-  int iteratingI(int from, int limit, int arg) {
-    for (var i = from; i < limit; i++, arg++) {
+  int iteratingI(int from, int last, int arg) {
+    for (var i = from; i <= last; i++, arg++) {
       this(arg);
     }
     return arg;
   }
 
-  int iteratingJ(int from, int limit, int limitI, int arg) {
-    for (var j = from; j < limit; j++) {
-      for (var i = 0; i < limitI; i++, arg++) {
+  int iteratingJ(int from, int last, int lastI, int arg) {
+    for (var j = from; j <= last; j++) {
+      for (var i = 1; i <= lastI; i++, arg++) {
         this(arg);
       }
     }
@@ -414,9 +414,9 @@ extension _ConsumeIntAllExtension on void Function(int) {
   }
 
   int iteratingK(int from, int limit, int limitJ, int limitI, int arg) {
-    for (var k = from; k < limit; k++) {
-      for (var j = 0; j < limitJ; j++) {
-        for (var i = 0; i < limitI; i++, arg++) {
+    for (var k = from; k <= limit; k++) {
+      for (var j = 1; j <= limitJ; j++) {
+        for (var i = 1; i <= limitI; i++, arg++) {
           this(arg);
         }
       }

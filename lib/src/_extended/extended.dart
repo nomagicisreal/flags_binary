@@ -15,7 +15,7 @@ part of '../../flags_binary.dart';
 /// [quotientCeil8], ...
 ///
 /// instances methods:
-/// return void                   : [pConsume], ...
+/// return void                   : [pConsume1], ...
 /// return bool                   : [pOn], ...
 /// return integer                : [bFirstOf], ...
 /// return iterable integer       : [bitsForward], ...
@@ -55,34 +55,37 @@ extension TypedIntList on TypedDataList<int> {
   static int quotientCeil8(int value) => value + mask8 >> shift8;
 
   ///
-  /// [pConsume]
+  /// [pConsume1], [pConsume0]
   /// [pSet], [pClear]
   ///
-  void pConsume(
-    void Function(int p) consume,
-    int iLimit, [
-    int consumed = 1,
-    int? jLimit,
-  ]) {
+  void pConsume1(void Function(int p) consume, int iLimit, [int? jLimit]) {
     jLimit ??= length - 1;
-    assert(consumed == 0 || consumed == 1);
-    assert(iLimit > 0 && jLimit >= 0 && jLimit < length);
-    for (var j = 0; j < jLimit; j++) {
-      final start = iLimit * j;
-      for (var pI = 1, bits = this[j]; bits > 0; pI++, bits >>= 1) {
-        if (bits & 1 == consumed) consume(start + pI);
+    assert(iLimit > 0 && jLimit > 0 && jLimit < length);
+    for (var j = 0, p = 1; j < jLimit; j++, p = iLimit * j + 1) {
+      for (var bits = this[j]; bits > 0; bits >>= 1, p++) {
+        if (bits & 1 == 1) consume(p);
+      }
+    }
+  }
+
+  void pConsume0(void Function(int p) consume, int iLimit, [int? jLimit]) {
+    jLimit ??= length - 1;
+    assert(iLimit > 0 && jLimit > 0 && jLimit < length);
+    for (var j = 0, p = 1; j < jLimit; j++, p = iLimit * j + 1) {
+      for (var bits = this[j]; bits > 0; bits >>= 1, p++) {
+        if (bits & 1 == 0) consume(p);
       }
     }
   }
 
   void pSet(int p, int shift, int mask) {
     assert(p > 0 && mask + 1 == 1 << shift);
-    this[p >> shift] |= 1 << (p & mask);
+    this[--p >> shift] |= 1 << (p & mask);
   }
 
   void pClear(int p, int shift, int mask) {
     assert(p > 0 && mask + 1 == 1 << shift);
-    this[p >> shift] &= ~(1 << (p & mask));
+    this[--p >> shift] &= ~(1 << (p & mask));
   }
 
   ///
@@ -90,7 +93,8 @@ extension TypedIntList on TypedDataList<int> {
   ///
   bool pOn(int p, int shift, int mask) {
     assert(p > 0 && mask + 1 == 1 << shift);
-    return this[p >> shift] >> (p & mask) & 1 == 1;
+    final b = p - 1;
+    return this[b >> shift] >> (b & mask) & 1 == 1;
   }
 
   ///
