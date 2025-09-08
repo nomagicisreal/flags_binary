@@ -92,16 +92,16 @@ mixin _MFlagsContainerSpatial2<T>
     implements
         _AFlagsContainer<(int, int), T>,
         _AFlagsSpatial2,
-        _AFlagsPositionAble<(int, int)> {
+        _AFlagsBitsAble<(int, int)> {
   @override
   bool validateIndex((int, int) index) =>
       index.$1.isRangeOpenLower(0, spatial1) &&
       index.$2.isRangeOpenLower(0, spatial2);
 
   @override
-  int _positionOf((int, int) index) {
+  int _bOf((int, int) index) {
     assert(validateIndex(index));
-    return (index.$1 - 1) * spatial2 + index.$2;
+    return (index.$1 - 1) * spatial2 + index.$2 - 1;
   }
 }
 
@@ -109,7 +109,7 @@ mixin _MFlagsContainerSpatial3<T>
     implements
         _AFlagsContainer<(int, int, int), T>,
         _AFlagsSpatial3,
-        _AFlagsPositionAble<(int, int, int)> {
+        _AFlagsBitsAble<(int, int, int)> {
   @override
   bool validateIndex((int, int, int) index) =>
       index.$1.isRangeOpenLower(0, spatial1) &&
@@ -117,9 +117,9 @@ mixin _MFlagsContainerSpatial3<T>
       index.$3.isRangeOpenLower(0, spatial3);
 
   @override
-  int _positionOf((int, int, int) index) {
+  int _bOf((int, int, int) index) {
     assert(validateIndex(index));
-    return ((index.$1 - 1) * spatial2 + index.$2 - 1) * spatial3 + index.$3;
+    return ((index.$1 - 1) * spatial2 + index.$2 - 1) * spatial3 + index.$3 - 1;
   }
 }
 
@@ -127,7 +127,7 @@ mixin _MFlagsContainerSpatial4<T>
     implements
         _AFlagsContainer<(int, int, int, int), T>,
         _AFlagsSpatial4,
-        _AFlagsPositionAble<(int, int, int, int)> {
+        _AFlagsBitsAble<(int, int, int, int)> {
   @override
   bool validateIndex((int, int, int, int) index) =>
       index.$1.isRangeOpenLower(0, spatial1) &&
@@ -136,13 +136,14 @@ mixin _MFlagsContainerSpatial4<T>
       index.$4.isRangeOpenLower(0, spatial4);
 
   @override
-  int _positionOf((int, int, int, int) index) {
+  int _bOf((int, int, int, int) index) {
     assert(validateIndex(index));
     return (((index.$1 - 1) * spatial2 + index.$2 - 1) * spatial3 +
                 index.$3 -
                 1) *
             spatial4 +
-        index.$4;
+        index.$4 -
+        1;
   }
 }
 
@@ -156,9 +157,9 @@ mixin _MFlagsContainerScopedDate<T>
 }
 
 mixin _MFlagsScopedDatePositionDay
-    implements _AFlagsScoped<(int, int)>, _AFlagsPositionAble<(int, int, int)> {
+    implements _AFlagsScoped<(int, int)>, _AFlagsBitsAble<(int, int, int)> {
   @override
-  int _positionOf((int, int, int) index) =>
+  int _bOf((int, int, int) index) =>
       begin.daysToDate(index.$1, index.$2, index.$3);
 }
 
@@ -193,17 +194,17 @@ mixin _MBitsFieldMonthsDates
 ///
 ///
 mixin _MFieldContainerPositionAble<I> on _MBitsField
-    implements _AFlagsContainer<I, bool>, _AFlagsPositionAble<I> {
+    implements _AFlagsContainer<I, bool>, _AFlagsBitsAble<I> {
   @override
   bool operator [](I index) {
     assert(validateIndex(index));
-    return _bOn(_positionOf(index));
+    return _bOn(_bOf(index));
   }
 
   @override
   void operator []=(I index, bool value) {
     assert(validateIndex(index));
-    value ? _bSet(_positionOf(index)) : _bClear(_positionOf(index));
+    value ? _bSet(_bOf(index)) : _bClear(_bOf(index));
   }
 }
 
@@ -225,17 +226,17 @@ mixin _MFieldContainerMonthsDates on _MFlagsContainerScopedDate<bool>
 }
 
 mixin _MSlotContainerPositionAble<I, T>
-    implements _AFlagsContainer<I, T?>, _AFlagsPositionAble<I>, _ASlot<T> {
+    implements _AFlagsContainer<I, T?>, _AFlagsBitsAble<I>, _ASlot<T> {
   @override
   T? operator [](I index) {
     assert(validateIndex(index));
-    return _slot[_positionOf(index)];
+    return _slot[_bOf(index)];
   }
 
   @override
   void operator []=(I index, T? value) {
     assert(validateIndex(index));
-    _slot[_positionOf(index)] = value;
+    _slot[_bOf(index)] = value;
   }
 }
 
@@ -373,7 +374,7 @@ mixin _MOnFlagsIndexSub<F, I, J> on _MFieldContainerPositionAble<I>
     assert(index.isRangeOpenLower(0, spatial1));
     for (var indexSub in inclusion) {
       assert(_validateIndexSub(indexSub));
-      _bSet(_positionOf(_indexMerge(index, indexSub)));
+      _bSet(_bOf(_indexMerge(index, indexSub)));
     }
   }
 
@@ -382,7 +383,7 @@ mixin _MOnFlagsIndexSub<F, I, J> on _MFieldContainerPositionAble<I>
     assert(index.isRangeOpenLower(0, spatial1));
     for (var indexSub in exclusion) {
       assert(_validateIndexSub(indexSub));
-      _bClear(_positionOf(_indexMerge(index, indexSub)));
+      _bClear(_bOf(_indexMerge(index, indexSub)));
     }
   }
 }
@@ -401,11 +402,20 @@ mixin _MOnFieldSpatial2 on _MOnFlagsIndexSub<Field, (int, int), int>
     assert(index.isRangeOpenLower(0, spatial1));
     final spatial2 = this.spatial2,
         start = (index - 1) * spatial2,
-        field = Field(spatial2);
-    for (var i = 1; i <= spatial2; i++) {
-      if (_bOn(start + i)) field._bSet(i);
+        source = _field,
+        sourceShift = _shift,
+        sourceMask = _mask,
+        result = Field(spatial2),
+        field = result._field,
+        shift = result._shift,
+        mask = result._mask;
+    for (var b = 0; b < spatial2; b++) {
+      final bSource = b + start;
+      if (source[bSource >> sourceShift] >> (bSource & sourceMask) & 1 == 1) {
+        field[b >> shift] |= 1 << (b & mask);
+      }
     }
-    return field;
+    return result;
   }
 }
 
@@ -426,16 +436,23 @@ mixin _MOnFieldSpatial3
     assert(index.isRangeOpenLower(0, spatial1));
     final spatial2 = this.spatial2,
         spatial3 = this.spatial3,
-        field = Field2D(spatial2, spatial3),
-        start = (index - 1) * spatial2 * spatial3;
-    for (var j = 0; j < spatial2; j++) {
-      final begin = j * spatial3;
-      for (var i = 1; i <= spatial3; i++) {
-        final p = begin + i;
-        if (_bOn(start + p)) field._bSet(p);
+        start = (index - 1) * spatial2 * spatial3,
+        source = _field,
+        sourceShift = _shift,
+        sourceMask = _mask,
+        result = Field2D(spatial2, spatial3),
+        field = result._field,
+        shift = result._shift,
+        mask = result._mask;
+    for (var j = 0, b = 0; j < spatial2; j++) {
+      for (var i = 0; i < spatial3; i++, b++) {
+        final bSource = b + start;
+        if (source[bSource >> sourceShift] >> (bSource & sourceMask) & 1 == 1) {
+          field[b >> shift] |= 1 << (b & mask);
+        }
       }
     }
-    return field;
+    return result;
   }
 }
 
@@ -458,15 +475,21 @@ mixin _MOnFieldSpatial4
     final spatial2 = this.spatial2,
         spatial3 = this.spatial3,
         spatial4 = this.spatial4,
-        start = index * spatial2 * spatial3 * spatial4,
-        result = Field3D(spatial2, spatial3, spatial4);
-    for (var k = 0; k < spatial2; k++) {
-      final b1 = k * spatial3;
+        start = (index - 1) * spatial2 * spatial3 * spatial4,
+        source = _field,
+        sShift = _shift,
+        sMask = _mask,
+        result = Field3D(spatial2, spatial3, spatial4),
+        field = result._field,
+        shift = result._shift,
+        mask = result._mask;
+    for (var k = 0, b = 0; k < spatial2; k++) {
       for (var j = 0; j < spatial3; j++) {
-        final b2 = j * spatial4;
-        for (var i = 1; i <= spatial4; i++) {
-          final p = b1 + b2 + i;
-          if (_bOn(start + p)) result._bSet(p);
+        for (var i = 0; i < spatial4; i++, b++) {
+          final bSource = b + start;
+          if (source[bSource >> sShift] >> (bSource & sMask) & 1 == 1) {
+            field[b >> shift] |= 1 << (b & mask);
+          }
         }
       }
     }

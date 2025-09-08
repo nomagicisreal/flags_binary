@@ -58,8 +58,8 @@ abstract class _AFlagsSpatial4 implements _AFlagsSpatial3 {
 /// if started from 0, yielding iterable elements from the functions be like [TypedIntList.bitsBackwardOf] required '- 1'
 /// for each iterable element.
 ///
-abstract class _AFlagsPositionAble<I> implements _PFlags {
-  int _positionOf(I index);
+abstract class _AFlagsBitsAble<I> implements _PFlags {
+  int _bOf(I index);
 }
 
 abstract class _AFlagsOn<F, I> implements _PFlags {

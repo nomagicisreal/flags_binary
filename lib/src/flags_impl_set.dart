@@ -86,53 +86,72 @@ mixin _MSetFieldIndexable<T> on _MFieldContainerPositionAble<T>
 
   @override
   T? firstAfter(T index) => _field
-      .bFirstAfter(_positionOf(index), _shift, _mask, _sizeEach)
+      .bFirstAfter(_bOf(index), _shift, _mask, _sizeEach)
       .nullOrMap(_indexOf);
 
   @override
   T? lastBefore(T index) => _field
-      .bLastBefore(_positionOf(index), _shift, _mask, _sizeEach)
+      .bLastBefore(_bOf(index), _shift, _mask, _sizeEach)
       .nullOrMap(_indexOf);
 
-  // Iterable<T> get availables => _field.mapPAvailable(_sizeEach, _indexOf);
   @override
-  Iterable<T> get availables => throw UnimplementedError();
+  Iterable<T> get availables => _field.bitsForwardMap(_indexOf, _sizeEach);
 
   @override
-  Iterable<T> availablesLatest(T from, [T? to]) {
-    throw UnimplementedError();
-    // final p = _positionOf(index);
-    // return _field.mapPAvailableLatest(
-    //   p >> _shift,
-    //   p & _mask,
-    //   _sizeEach,
-    //   inclusive,
-    //   _indexOf,
-    // );
+  Iterable<T> availablesRecent(T from, [T? to]) {
+    assert(() {
+      final pFrom = _bOf(from);
+      if (pFrom < 1) return false;
+      if (to == null) return true;
+      final pTo = _bOf(to);
+      return pFrom <= pTo && pTo <= _field.length * _sizeEach;
+    }());
+    final int shift = _shift, mask = _mask, pFrom = _bOf(from);
+    final int jT, iT;
+    if (to == null) {
+      jT = _field.length - 1;
+      iT = _sizeEach - 1;
+    } else {
+      final pTo = _bOf(to);
+      jT = pTo >> shift;
+      iT = pTo & mask;
+    }
+    return _field.bitsForwardMapBetween(
+      _indexOf,
+      _sizeEach,
+      pFrom >> shift,
+      pFrom & mask,
+      jT,
+      iT,
+    );
   }
 
   @override
-  Iterable<T> availablesRecent([T? from, T? to]) {
-    throw UnimplementedError();
-    // final int shift = _shift, mask = _mask, jF, iF;
-    // if (from == null) {
-    //   jF = 0;
-    //   iF = 0;
-    // } else {
-    //   final pFrom = _positionOf(from);
-    //   jF = pFrom >> shift;
-    //   iF = pFrom & mask;
-    // }
-    // final int? jT, iT;
-    // if (to == null) {
-    //   jT = null;
-    //   iT = null;
-    // } else {
-    //   final pTo = _positionOf(to);
-    //   jT = pTo >> shift;
-    //   iT = pTo & mask;
-    // }
-    // return _field.mapPAvailableRecent(_sizeEach, jF, iF, _indexOf, jT, iT);
+  Iterable<T> availablesLatest(T from, [T? to]) {
+    assert(() {
+      final pFrom = _bOf(from);
+      if (pFrom < 1) return false;
+      if (to == null) return true;
+      final pTo = _bOf(to);
+      return pTo >= 0 && pTo <= pFrom && pFrom <= _field.length * _sizeEach;
+    }());
+    final int shift = _shift, mask = _mask, pFrom = _bOf(from), jTo, iTo;
+    if (to == null) {
+      jTo = _field.length - 1;
+      iTo = _sizeEach - 1;
+    } else {
+      final pTo = _bOf(to);
+      jTo = pTo >> shift;
+      iTo = pTo & mask;
+    }
+    return _field.bitsBackwardMapBetween(
+      _indexOf,
+      _sizeEach,
+      pFrom >> shift,
+      pFrom & mask,
+      jTo,
+      iTo,
+    );
   }
 }
 
@@ -140,7 +159,7 @@ mixin _MSetFieldIndexable<T> on _MFieldContainerPositionAble<T>
 ///
 ///
 mixin _MSetSlot<I, T>
-    implements _ASlot<T>, _ASlotSet<I, T>, _AFlagsPositionAble<I> {
+    implements _ASlot<T>, _ASlotSet<I, T>, _AFlagsBitsAble<I> {
   @override
   T? get first {
     final slot = _slot, length = slot.length;
@@ -154,7 +173,7 @@ mixin _MSetSlot<I, T>
   @override
   T? firstAfter(I index) {
     final slot = _slot, length = slot.length;
-    var p = _positionOf(index);
+    var p = _bOf(index);
     if (p > length - 2) return null;
     for (p = p < 0 ? 0 : p + 1; p < length; p++) {
       final s = slot[p];
@@ -176,7 +195,7 @@ mixin _MSetSlot<I, T>
   @override
   T? lastBefore(I index) {
     final slot = _slot, last = slot.length - 1;
-    var p = _positionOf(index);
+    var p = _bOf(index);
     if (p < 2) return null;
     if (p > last) return slot[last];
     for (p = p > last ? last : p - 1; p >= 0; p--) {
@@ -205,12 +224,12 @@ mixin _MSetSlot<I, T>
   @override
   Iterable<T> availablesRecent([I? from, I? to]) sync* {
     final slot = _slot, length = slot.length, last = length - 1;
-    var p = from == null ? 0 : _positionOf(from);
+    var p = from == null ? 0 : _bOf(from);
     final int pLast;
     if (to == null) {
       pLast = last;
     } else {
-      final pTo = _positionOf(to);
+      final pTo = _bOf(to);
       assert(p <= pTo, 'invalid index($from, $to) -> position($p, $pTo)');
       if (pTo < 0) return;
       pLast = math.min(pTo, last);
@@ -248,8 +267,8 @@ mixin _MSetSlot<I, T>
   @override
   void pasteSub(T value, I begin, [I? limit]) {
     final slot = _slot;
-    final length = limit == null ? slot.length : _positionOf(limit);
-    for (var i = _positionOf(begin); i < length; i++) {
+    final length = limit == null ? slot.length : _bOf(limit);
+    for (var i = _bOf(begin); i < length; i++) {
       slot[i] = value;
     }
   }
@@ -257,7 +276,7 @@ mixin _MSetSlot<I, T>
   @override
   void includesFrom(Iterable<T> iterable, I begin, [bool inclusive = true]) {
     final slot = _slot;
-    var i = inclusive ? _positionOf(begin) : _positionOf(begin) + 1;
+    var i = inclusive ? _bOf(begin) : _bOf(begin) + 1;
     assert(i >= 0 && i < slot.length);
     for (var it in iterable) {
       slot[i] = it;
@@ -268,7 +287,7 @@ mixin _MSetSlot<I, T>
   @override
   void includesTo(Iterable<T> iterable, I limit, [bool inclusive = true]) {
     final slot = _slot;
-    var last = inclusive ? _positionOf(limit) + 1 : _positionOf(limit);
+    var last = inclusive ? _bOf(limit) + 1 : _bOf(limit);
     assert(last < slot.length);
     var i = last - iterable.length;
     assert(i >= 0);

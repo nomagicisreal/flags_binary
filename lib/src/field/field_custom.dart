@@ -167,7 +167,7 @@ abstract class FieldAB extends FieldParent
   }
 
   @override
-  int _positionOf((int, int) index) {
+  int _bOf((int, int) index) {
     assert(validateIndex(index));
     return index.$1 * bDivision + index.$2 ~/ bSizeDivision;
   }

@@ -84,7 +84,7 @@ extension TypedIntList on TypedDataList<int> {
   }
 
   void bClear(int b, int shift, int mask) {
-    assert(b > 0 && mask + 1 == 1 << shift);
+    assert(b >= 0 && mask + 1 == 1 << shift);
     this[b >> shift] &= ~(1 << (b & mask));
   }
 
@@ -92,7 +92,7 @@ extension TypedIntList on TypedDataList<int> {
   /// [bOn]
   ///
   bool bOn(int b, int shift, int mask) {
-    assert(b > 0 && mask + 1 == 1 << shift);
+    assert(b >= 0 && mask + 1 == 1 << shift);
     return this[b >> shift] >> (b & mask) & 1 == 1;
   }
 
@@ -654,6 +654,88 @@ extension TypedIntList on TypedDataList<int> {
     yield* bitsForwardFrom(bSize, index >> shift, index & mask);
   }
 
+  //
+  Iterable<T> bitsForwardMap<T>(T Function(int) mapper, int bSize) sync* {
+    assert(bSize > 0);
+    final length = this.length;
+    for (var j = 0, p = 1, bits = this[j]; j < length; j++, p = bSize * j + 1) {
+      for (; bits > 0; bits >>= 1, p++) {
+        if (bits & 1 == 1) yield mapper(p);
+      }
+    }
+  }
+
+  Iterable<T> bitsForwardMapFrom<T>(
+    T Function(int) mapper,
+    int bSize,
+    int j,
+    int i,
+  ) sync* {
+    assert(j >= 0 && j < this.length && i >= 0 && i < bSize);
+    final length = this.length;
+    var bits = this[j] >> i, p = bSize * j + i + 1;
+    while (true) {
+      for (; bits > 0; bits >>= 1, p++) {
+        if (bits & 1 == 1) yield mapper(p);
+      }
+      if (++j >= length) return;
+      bits = this[j];
+      p = bSize * j + 1;
+    }
+  }
+
+  Iterable<T> bitsForwardMapTo<T>(
+    T Function(int) mapper,
+    int bSize,
+    int jTo,
+    int iTo,
+  ) sync* {
+    assert(jTo >= 0 && jTo < length && iTo >= 0 && iTo < bSize);
+    var j = 0, bits = this[0], p = 1;
+    for (; j < jTo; j++, bits = this[j], p = bSize * j + 1) {
+      for (; bits > 0; bits >>= 1, p++) {
+        if (bits & 1 == 1) yield mapper(p);
+      }
+    }
+    for (final limit = p + iTo; p < limit; bits >>= 1, p++) {
+      if (bits & 1 == 1) yield mapper(p);
+    }
+  }
+
+  Iterable<T> bitsForwardMapBetween<T>(
+    T Function(int) mapper,
+    int bSize,
+    int j,
+    int i,
+    int jTo,
+    int iTo,
+  ) sync* {
+    assert(j >= 0 && j <= jTo && jTo < length);
+    assert(i >= 0 && i < bSize && iTo > 0 && iTo < bSize);
+
+    var bits = this[j] >> i, p = bSize * j + i + 1;
+    for (var j = 0; j < jTo; j++, bits = this[j], p = bSize * j + 1) {
+      for (; bits > 0; bits >>= 1, p++) {
+        if (bits & 1 == 1) yield mapper(p);
+      }
+    }
+    for (final limit = p + iTo; p < limit; bits >>= 1, p++) {
+      if (bits & 1 == 1) yield mapper(p);
+    }
+  }
+
+  Iterable<T> bitsForwardMapAfter<T>(
+    T Function(int) mapper,
+    int index,
+    int shift,
+    int mask,
+    int bSize,
+  ) sync* {
+    assert(index >= 0 && index < length * bSize && mask + 1 == 1 << shift);
+    if (++index >= length * bSize - 1) return;
+    yield* bitsForwardMapFrom(mapper, bSize, index >> shift, index & mask);
+  }
+
   ///
   ///
   ///
@@ -729,5 +811,92 @@ extension TypedIntList on TypedDataList<int> {
     assert(index >= 0 && index < length * bSize && mask + 1 == 1 << shift);
     if (--index < 1) return;
     yield* bitsBackwardFrom(bSize, index >> shift, index & mask);
+  }
+
+  //
+  Iterable<T> bitsBackwardMap<T>(T Function(int) mapper, int bSize) sync* {
+    assert(bSize > 0);
+    for (
+      var j = length - 1, bits = this[j], m = 1 << bits.bitLength - 1;
+      j >= 0;
+      j--
+    ) {
+      for (final from = bSize * j; m > 0; m >>= 1) {
+        if (bits & m == m) yield mapper(from + m.bitLength);
+      }
+    }
+  }
+
+  Iterable<T> bitsBackwardMapFrom<T>(
+    T Function(int) mapper,
+    int bSize,
+    int j,
+    int i,
+  ) sync* {
+    assert(j >= 0 && j < length && i >= 0 && i < bSize);
+
+    var bits = this[j], m = 1 << math.min(i, bits.bitLength - 1);
+    while (true) {
+      for (final from = bSize * j; m > 0; m >>= 1) {
+        if (bits & m == m) yield mapper(from + m.bitLength);
+      }
+      if (--j < 0) return;
+      bits = this[j];
+      m = 1 << bits.bitLength - 1;
+    }
+  }
+
+  Iterable<T> bitsBackwardMapTo<T>(
+    T Function(int) mapper,
+    int bSize,
+    int jTo,
+    int iTo,
+  ) sync* {
+    assert(jTo >= 0 && jTo < length && iTo >= 0 && iTo < bSize);
+
+    var j = length - 1, bits = this[j], m = 1 << bits.bitLength - 1;
+    for (; j > jTo; j--, bits = this[j], m = 1 << bits.bitLength - 1) {
+      for (final from = bSize * j; m > 0; m >>= 1) {
+        if (bits & m == m) yield mapper(from + m.bitLength);
+      }
+    }
+    assert(bits.bitLength <= bSize);
+    for (final smallest = 1 << iTo, from = bSize * j; m >= smallest; m >>= 1) {
+      if (bits & m == m) yield mapper(from + m.bitLength);
+    }
+  }
+
+  Iterable<T> bitsBackwardMapBetween<T>(
+    T Function(int) mapper,
+    int bSize,
+    int j,
+    int i,
+    int jTo,
+    int iTo,
+  ) sync* {
+    assert(jTo >= 0 && jTo <= j && j < length);
+    assert(iTo >= 0 && iTo < bSize && i >= 0 && i < bSize);
+
+    var bits = this[j], m = 1 << math.min(i, bits.bitLength - 1);
+    for (; j > jTo; j--, bits = this[j], m = 1 << bits.bitLength - 1) {
+      for (final from = bSize * j; m > 0; m >>= 1) {
+        if (bits & m == m) yield mapper(from + m.bitLength);
+      }
+    }
+    for (final smallest = 1 << iTo, from = bSize * j; m >= smallest; m >>= 1) {
+      if (bits & m == m) yield mapper(from + m.bitLength);
+    }
+  }
+
+  Iterable<T> bitsBackwardMapBefore<T>(
+    T Function(int) mapper,
+    int index,
+    int shift,
+    int mask,
+    int bSize,
+  ) sync* {
+    assert(index >= 0 && index < length * bSize && mask + 1 == 1 << shift);
+    if (--index < 1) return;
+    yield* bitsBackwardMapFrom(mapper, bSize, index >> shift, index & mask);
   }
 }

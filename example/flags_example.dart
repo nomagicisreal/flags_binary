@@ -2,13 +2,13 @@
 import 'package:flags_binary/flags_binary.dart';
 
 void main() {
-  final field = Field(99);
-  field.includesSub(20, 60);
-  // final field = Field2D(10, 22);
-  // field.includesOn(5, [1, 2, 7, 9, 18]);
+  // final field = Field(99);
+  // field.includesSub(20, 60);
+  final field = Field2D(10, 22);
+  field.includesOn(5, [1, 2, 7, 9, 18]);
   // final field = Field3D(2, 10, 15);
   // field.includesOn(2, [(1, 1), (9, 3), (4, 10)]);
-  print(field.availablesLatest(40, 22));
+  print(field.collapseOn(5));
 
   // print(field.availablesLatest(25));
   // field[(2, 1)] = true;

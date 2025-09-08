@@ -39,7 +39,7 @@ class Slot<T> extends SlotParent<T>
   }
 
   @override
-  int _positionOf(int index) => index;
+  int _bOf(int index) => index;
 }
 
 class Slot2D<T> extends SlotParent<T>
