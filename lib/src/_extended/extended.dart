@@ -16,7 +16,7 @@ part of '../../flags_binary.dart';
 ///
 /// instances methods:
 /// return void                   : [pConsume1], ...
-/// return bool                   : [pOn], ...
+/// return bool                   : [bOn], ...
 /// return integer                : [bFirstOf], ...
 /// return iterable integer       : [bitsForward], ...
 /// return iterable provided type : [mapPAvailable], ...
@@ -56,49 +56,48 @@ extension TypedIntList on TypedDataList<int> {
 
   ///
   /// [pConsume1], [pConsume0]
-  /// [pSet], [pClear]
+  /// [bSet], [bClear]
   ///
-  void pConsume1(void Function(int p) consume, int iLimit, [int? jLimit]) {
+  void pConsume1(void Function(int p) consume, int bSize, [int? jLimit]) {
     jLimit ??= length - 1;
-    assert(iLimit > 0 && jLimit > 0 && jLimit < length);
-    for (var j = 0, p = 1; j < jLimit; j++, p = iLimit * j + 1) {
+    assert(bSize > 0 && jLimit > 0 && jLimit < length);
+    for (var j = 0, p = 1; j < jLimit; j++, p = bSize * j + 1) {
       for (var bits = this[j]; bits > 0; bits >>= 1, p++) {
         if (bits & 1 == 1) consume(p);
       }
     }
   }
 
-  void pConsume0(void Function(int p) consume, int iLimit, [int? jLimit]) {
+  void pConsume0(void Function(int p) consume, int bSize, [int? jLimit]) {
     jLimit ??= length - 1;
-    assert(iLimit > 0 && jLimit > 0 && jLimit < length);
-    for (var j = 0, p = 1; j < jLimit; j++, p = iLimit * j + 1) {
+    assert(bSize > 0 && jLimit > 0 && jLimit < length);
+    for (var j = 0, p = 1; j < jLimit; j++, p = bSize * j + 1) {
       for (var bits = this[j]; bits > 0; bits >>= 1, p++) {
         if (bits & 1 == 0) consume(p);
       }
     }
   }
 
-  void pSet(int p, int shift, int mask) {
-    assert(p > 0 && mask + 1 == 1 << shift);
-    this[--p >> shift] |= 1 << (p & mask);
+  void bSet(int b, int shift, int mask) {
+    assert(b >= 0 && mask + 1 == 1 << shift);
+    this[b >> shift] |= 1 << (b & mask);
   }
 
-  void pClear(int p, int shift, int mask) {
-    assert(p > 0 && mask + 1 == 1 << shift);
-    this[--p >> shift] &= ~(1 << (p & mask));
+  void bClear(int b, int shift, int mask) {
+    assert(b > 0 && mask + 1 == 1 << shift);
+    this[b >> shift] &= ~(1 << (b & mask));
   }
 
   ///
-  /// [pOn]
+  /// [bOn]
   ///
-  bool pOn(int p, int shift, int mask) {
-    assert(p > 0 && mask + 1 == 1 << shift);
-    final b = p - 1;
+  bool bOn(int b, int shift, int mask) {
+    assert(b > 0 && mask + 1 == 1 << shift);
     return this[b >> shift] >> (b & mask) & 1 == 1;
   }
 
   ///
-  /// [bFirstOf], [bFirstOfFrom], [bFirstOfTo], [bFirstOfBetween], ...
+  /// [bFirstOf], [bFirstOfFrom], [bFirstOfTo], [bFirstOfBetween], ..., bFirstNOf, ...?
   /// [bFirst], [bFirstFrom], [bFirstTo], [bFirstBetween], ...
   /// [bFirstAfter]
   ///
@@ -106,51 +105,40 @@ extension TypedIntList on TypedDataList<int> {
   /// [bLast], [bLastFrom], [bLastTo], [bLastBetween], ...
   /// [bLastBefore]
   ///
-  /// the purpose of "[b] == 1" in first-functions is to be consistent with last-functions,
-  /// while it's also possible to start from 0 instead of 1.
   ///
 
   ///
   ///
   ///
-  int? bFirstOf(int j, [int b = 1]) {
+  int? bFirstOf(int j) {
     assert(j >= 0 && j < length);
-    for (var bits = this[j]; bits > 0; bits >>= 1, b++) {
+    for (var bits = this[j], b = 1; bits > 0; bits >>= 1, b++) {
       if (bits & 1 == 1) return b;
     }
     return null;
   }
 
-  // int? bFirstNOf(int j, int n, [int b = 1]) {
-  //   assert(j >= 0 && j < length);
-  //   for (var bits = this[j]; bits > 0; bits >>= 1, b++) {
-  //     if (bits & 1 == 1 && --n == 0) return b;
-  //   }
-  //   return null;
-  // }
-
-  int? bFirstOfFrom(int j, int i, [int b = 1]) {
+  int? bFirstOfFrom(int j, int i) {
     assert(j >= 0 && j < length && i >= 0);
-    for (var bits = this[j] >> i; bits > 0; bits >>= 1, b++) {
+    for (var bits = this[j] >> i, b = i + 1; bits > 0; bits >>= 1, b++) {
       if (bits & 1 == 1) return b;
     }
     return null;
   }
 
-  int? bFirstOfTo(int j, int iTo, [int b = 1]) {
+  int? bFirstOfTo(int j, int iTo) {
     assert(j >= 0 && j < length && iTo > 0);
-    final smallest = 1 << iTo;
-    for (var bits = this[j]; bits >= smallest; bits >>= 1, b++) {
+    var bits = this[j], b = 1;
+    for (final bLimit = b + iTo; b < bLimit; bits >>= 1, b++) {
       if (bits & 1 == 1) return b;
     }
     return null;
   }
 
-  int? bFirstOfBetween(int j, int i, int iTo, [int b = 1]) {
+  int? bFirstOfBetween(int j, int i, int iTo) {
     assert(j >= 0 && j < length && i > 0 && i < iTo);
-    final smallest = 1 << iTo;
-    b += i;
-    for (var bits = this[j] >> i; bits >= smallest; bits >>= 1, b++) {
+    var bits = this[j] >> i, b = i + 1;
+    for (final bLimit = b + iTo; b < bLimit; bits >>= 1, b++) {
       if (bits & 1 == 1) return b;
     }
     return null;
@@ -159,66 +147,67 @@ extension TypedIntList on TypedDataList<int> {
   ///
   ///
   ///
-  int? bFirst(int iLimit, [int b = 1]) {
-    assert(iLimit > 0);
+  int? bFirst(int bSize) {
+    assert(bSize > 0);
     final length = this.length;
     for (var j = 0, bits = this[j]; j < length; j++) {
-      for (var i = b; bits > 0; bits >>= 1, i++) {
-        if (bits & 1 == 1) return iLimit * j + i;
+      for (var b = 1; bits > 0; bits >>= 1, b++) {
+        if (bits & 1 == 1) return bSize * j + b;
       }
     }
     return null;
   }
 
-  int? bFirstFrom(int iLimit, int j, int i, [int b = 1]) {
-    assert(j >= 0 && j < this.length && i >= 0 && i < iLimit);
+  int? bFirstFrom(int bSize, int j, int i) {
+    assert(j >= 0 && j < this.length && i >= 0 && i < bSize);
     final length = this.length;
-    var bits = this[j] >> i;
+    var bits = this[j] >> i, b = i + 1;
     while (true) {
-      for (i = b; bits > 0; bits >>= 1, i++) {
-        if (bits & 1 == 1) return i;
+      for (; bits > 0; bits >>= 1, b++) {
+        if (bits & 1 == 1) return bSize * j + b;
       }
       if (++j >= length) return null;
       bits = this[j];
+      b = 1;
     }
   }
 
-  int? bFirstTo(int iLimit, int jTo, int iTo, [int b = 1]) {
-    assert(jTo >= 0 && jTo < length && iTo >= 0 && iTo < iLimit);
+  int? bFirstTo(int bSize, int jTo, int iTo) {
+    assert(jTo >= 0 && jTo < length && iTo >= 0 && iTo < bSize);
     var bits = this[0];
     for (var j = 0; j < jTo; j++, bits = this[j]) {
-      for (var i = b; bits > 0; bits >>= 1, i++) {
-        if (bits & 1 == 1) return iLimit * j + i;
+      for (var b = 1; bits > 0; bits >>= 1, b++) {
+        if (bits & 1 == 1) return bSize * j + b;
       }
     }
-    final smallest = 1 << iTo;
-    for (var i = b; bits >= smallest; bits >>= 1, i++) {
-      if (bits & 1 == 1) return iLimit * jTo + i;
+    var b = 1;
+    for (final bLimit = iTo + 1; b < bLimit; bits >>= 1, b++) {
+      if (bits & 1 == 1) return bSize * jTo + b;
     }
     return null;
   }
 
-  int? bFirstBetween(int iLimit, int j, int i, int jTo, int iTo, [int b = 1]) {
+  int? bFirstBetween(int bSize, int j, int i, int jTo, int iTo) {
     assert(j >= 0 && j <= jTo && jTo < length);
-    assert(i >= 0 && i < iLimit && iTo > 0 && iTo < iLimit);
+    assert(i >= 0 && i < bSize && iTo > 0 && iTo < bSize);
 
     var bits = this[j] >> i;
     for (var j = 0; j < jTo; j++, bits = this[j]) {
-      for (var i = b; bits > 0; bits >>= 1, i++) {
-        if (bits & 1 == 1) return iLimit * j + i;
+      for (var b = 1; bits > 0; bits >>= 1, b++) {
+        if (bits & 1 == 1) return bSize * j + b;
       }
     }
-    final smallest = 1 << iTo;
-    for (var i = b; bits >= smallest; bits >>= 1, i++) {
-      if (bits & 1 == 1) return iLimit * jTo + i;
+    var b = 1;
+    for (final bLimit = iTo + 1; b < bLimit; bits >>= 1, b++) {
+      if (bits & 1 == 1) return bSize * jTo + b;
     }
     return null;
   }
 
-  int? bFirstAfter(int index, int shift, int mask, int iLimit, [int b = 1]) {
-    assert(index >= 0 && index < length * iLimit && mask + 1 == 1 << shift);
-    if (++index >= length * iLimit - 1) return null;
-    return bFirstFrom(iLimit, index >> shift, index & mask, b);
+  int? bFirstAfter(int index, int shift, int mask, int bSize) {
+    assert(index >= 0 && index < length * bSize && mask + 1 == 1 << shift);
+    if (++index >= length * bSize - 1) return null;
+    return bFirstFrom(bSize, index >> shift, index & mask);
   }
 
   ///
@@ -273,22 +262,22 @@ extension TypedIntList on TypedDataList<int> {
   ///
   ///
   ///
-  int? bLast(int iLimit) {
-    assert(iLimit > 0);
+  int? bLast(int bSize) {
+    assert(bSize > 0);
     for (var j = length - 1, bits = this[j]; j >= 0; j--) {
       for (var m = 1 << bits.bitLength - 1; m > 0; m >>= 1) {
-        if (bits & m == m) return iLimit * j + m.bitLength;
+        if (bits & m == m) return bSize * j + m.bitLength;
       }
     }
     return null;
   }
 
-  int? bLastFrom(int iLimit, int j, int i) {
-    assert(j >= 0 && j < length && i >= 0 && i < iLimit);
+  int? bLastFrom(int bSize, int j, int i) {
+    assert(j >= 0 && j < length && i >= 0 && i < bSize);
     var bits = this[j], m = 1 << math.min(i, bits.bitLength - 1);
     while (true) {
       for (; m > 0; m >>= 1) {
-        if (bits & m == m) return iLimit * j + m.bitLength;
+        if (bits & m == m) return bSize * j + m.bitLength;
       }
       if (--j < 0) return null;
       bits = this[j];
@@ -296,41 +285,41 @@ extension TypedIntList on TypedDataList<int> {
     }
   }
 
-  int? bLastTo(int iLimit, int jTo, int iTo) {
-    assert(jTo >= 0 && jTo < length && iTo >= 0 && iTo < iLimit);
+  int? bLastTo(int bSize, int jTo, int iTo) {
+    assert(jTo >= 0 && jTo < length && iTo >= 0 && iTo < bSize);
     var j = length - 1, bits = this[j], m = 1 << bits.bitLength - 1;
     for (; j > jTo; j--, bits = this[j], m = 1 << bits.bitLength - 1) {
       for (; m > 0; m >>= 1) {
-        if (bits & m == m) return iLimit * j + m.bitLength;
+        if (bits & m == m) return bSize * j + m.bitLength;
       }
     }
-    assert(bits.bitLength <= iLimit);
+    assert(bits.bitLength <= bSize);
     for (final smallest = 1 << iTo; m >= smallest; m >>= 1) {
-      if (bits & m == m) return iLimit * jTo + m.bitLength;
+      if (bits & m == m) return bSize * jTo + m.bitLength;
     }
     return null;
   }
 
-  int? bLastBetween(int iLimit, int j, int i, int jTo, int iTo) {
+  int? bLastBetween(int bSize, int j, int i, int jTo, int iTo) {
     assert(jTo >= 0 && jTo <= j && j < length);
-    assert(iTo >= 0 && iTo < iLimit && i >= 0 && i < iLimit);
+    assert(iTo >= 0 && iTo < bSize && i >= 0 && i < bSize);
 
     var bits = this[j], m = 1 << math.min(i, bits.bitLength - 1);
     for (; j > jTo; j--, bits = this[j], m = 1 << bits.bitLength - 1) {
       for (; m > 0; m >>= 1) {
-        if (bits & m == m) return iLimit * j + m.bitLength;
+        if (bits & m == m) return bSize * j + m.bitLength;
       }
     }
     for (final smallest = 1 << iTo; m >= smallest; m >>= 1) {
-      if (bits & m == m) return iLimit * jTo + m.bitLength;
+      if (bits & m == m) return bSize * jTo + m.bitLength;
     }
     return null;
   }
 
-  int? bLastBefore(int index, int shift, int mask, int iLimit) {
-    assert(index >= 0 && index < length * iLimit && mask + 1 == 1 << shift);
+  int? bLastBefore(int index, int shift, int mask, int bSize) {
+    assert(index >= 0 && index < length * bSize && mask + 1 == 1 << shift);
     if (--index < 1) return null;
-    return bLastFrom(iLimit, index >> shift, index & mask);
+    return bLastFrom(bSize, index >> shift, index & mask);
   }
 
   ///
@@ -356,46 +345,40 @@ extension TypedIntList on TypedDataList<int> {
   ///
   ///
   ///
-  Iterable<int> bitsForwardOf(int j, [int b = 1]) sync* {
+  Iterable<int> bitsForwardOf(int j) sync* {
     assert(j >= 0 && j < length);
-    for (var bits = this[j]; bits > 0; bits >>= 1, b++) {
+    for (var bits = this[j], b = 1; bits > 0; bits >>= 1, b++) {
       if (bits & 1 == 1) yield b;
     }
   }
 
-  Iterable<int> bitsForwardOfFrom(int j, int i, [int b = 1]) sync* {
+  Iterable<int> bitsForwardOfFrom(int j, int i) sync* {
     assert(j >= 0 && j < length && i >= 0);
-    b += i;
-    for (var bits = this[j] >> i; bits > 0; bits >>= 1, b++) {
+    for (var bits = this[j] >> i, b = i + 1; bits > 0; bits >>= 1, b++) {
       if (bits & 1 == 1) yield b;
     }
   }
 
-  Iterable<int> bitsForwardOfTo(int j, int iTo, [int b = 1]) sync* {
+  Iterable<int> bitsForwardOfTo(int j, int iTo) sync* {
     assert(j >= 0 && j < length && iTo > 0);
-    final smallest = 1 << iTo;
-    for (var bits = this[j]; bits >= smallest; bits >>= 1, b++) {
+    var bits = this[j], b = 1;
+    for (final bLimit = b + iTo; b < bLimit; bits >>= 1, b++) {
       if (bits & 1 == 1) yield b;
     }
   }
 
-  Iterable<int> bitsForwardOfBetween(int j, int i, int iTo, [int b = 1]) sync* {
+  Iterable<int> bitsForwardOfBetween(int j, int i, int iTo) sync* {
     assert(j >= 0 && j < length && i > 0 && i < iTo);
-    final smallest = 1 << iTo;
-    b += i;
-    for (var bits = this[j] >> i; bits >= smallest; bits >>= 1, b++) {
+    var bits = this[j] >> i, b = i + 1;
+    for (final bLimit = b + iTo; b < bLimit; bits >>= 1, b++) {
       if (bits & 1 == 1) yield b;
     }
   }
 
   //
-  Iterable<T> bitsForwardMapOf<T>(
-    T Function(int) mapper,
-    int j, [
-    int b = 1,
-  ]) sync* {
+  Iterable<T> bitsForwardMapOf<T>(T Function(int) mapper, int j) sync* {
     assert(j >= 0 && j < length);
-    for (var bits = this[j]; bits > 0; bits >>= 1, b++) {
+    for (var bits = this[j], b = 1; bits > 0; bits >>= 1, b++) {
       if (bits & 1 == 1) yield mapper(b);
     }
   }
@@ -403,12 +386,10 @@ extension TypedIntList on TypedDataList<int> {
   Iterable<T> bitsForwardMapOfFrom<T>(
     T Function(int) mapper,
     int j,
-    int i, [
-    int b = 1,
-  ]) sync* {
+    int i,
+  ) sync* {
     assert(j >= 0 && j < length && i >= 0);
-    b += i;
-    for (var bits = this[j] >> i; bits > 0; bits >>= 1, b++) {
+    for (var bits = this[j] >> i, b = i + 1; bits > 0; bits >>= 1, b++) {
       if (bits & 1 == 1) yield mapper(b);
     }
   }
@@ -416,12 +397,11 @@ extension TypedIntList on TypedDataList<int> {
   Iterable<T> bitsForwardMapOfTo<T>(
     T Function(int) mapper,
     int j,
-    int iTo, [
-    int b = 1,
-  ]) sync* {
+    int iTo,
+  ) sync* {
     assert(j >= 0 && j < length && iTo > 0);
-    final smallest = 1 << iTo;
-    for (var bits = this[j]; bits >= smallest; bits >>= 1, b++) {
+    var bits = this[j], b = 1;
+    for (final bLimit = b + iTo; b < bLimit; bits >>= 1, b++) {
       if (bits & 1 == 1) yield mapper(b);
     }
   }
@@ -430,13 +410,11 @@ extension TypedIntList on TypedDataList<int> {
     T Function(int) mapper,
     int j,
     int i,
-    int iTo, [
-    int b = 1,
-  ]) sync* {
+    int iTo,
+  ) sync* {
     assert(j >= 0 && j < length && i > 0 && i < iTo);
-    final smallest = 1 << iTo;
-    b += i;
-    for (var bits = this[j] >> i; bits >= smallest; bits >>= 1, b++) {
+    var bits = this[j] >> i, b = i + 1;
+    for (final bLimit = b + iTo; b < bLimit; bits >>= 1, b++) {
       if (bits & 1 == 1) yield mapper(b);
     }
   }
@@ -607,64 +585,60 @@ extension TypedIntList on TypedDataList<int> {
   ///
   ///
   ///
-  Iterable<int> bitsForward(int iLimit, [int p = 1]) sync* {
-    assert(iLimit > 0);
-    final length = this.length, start = p;
-    for (var j = 0, bits = this[j]; j < length; j++, p = start + iLimit * j) {
+  Iterable<int> bitsForward(int bSize) sync* {
+    assert(bSize > 0);
+    final length = this.length;
+    for (var j = 0, p = 1, bits = this[j]; j < length; j++, p = bSize * j + 1) {
       for (; bits > 0; bits >>= 1, p++) {
         if (bits & 1 == 1) yield p;
       }
     }
   }
 
-  Iterable<int> bitsForwardFrom(int iLimit, int j, int i, [int p = 1]) sync* {
-    assert(j >= 0 && j < this.length && i >= 0 && i < iLimit);
-    final length = this.length, start = p;
-    var bits = this[j] >> i;
+  Iterable<int> bitsForwardFrom(int bSize, int j, int i) sync* {
+    assert(j >= 0 && j < this.length && i >= 0 && i < bSize);
+    final length = this.length;
+    var bits = this[j] >> i, p = bSize * j + i + 1;
     while (true) {
       for (; bits > 0; bits >>= 1, p++) {
         if (bits & 1 == 1) yield p;
       }
       if (++j >= length) return;
       bits = this[j];
-      p = start + iLimit * j;
+      p = bSize * j + 1;
     }
   }
 
-  Iterable<int> bitsForwardTo(int iLimit, int jTo, int iTo, [int p = 1]) sync* {
-    assert(jTo >= 0 && jTo < length && iTo >= 0 && iTo < iLimit);
-    final start = p, smallest = 1 << iTo;
-    var j = 0, bits = this[0];
-    for (; j < jTo; j++, bits = this[j], p = start + iLimit * j) {
+  Iterable<int> bitsForwardTo(int bSize, int jTo, int iTo) sync* {
+    assert(jTo >= 0 && jTo < length && iTo >= 0 && iTo < bSize);
+    var j = 0, bits = this[0], p = 1;
+    for (; j < jTo; j++, bits = this[j], p = bSize * j + 1) {
       for (; bits > 0; bits >>= 1, p++) {
         if (bits & 1 == 1) yield p;
       }
     }
-    for (; bits >= smallest; bits >>= 1, p++) {
+    for (final limit = p + iTo; p < limit; bits >>= 1, p++) {
       if (bits & 1 == 1) yield p;
     }
   }
 
   Iterable<int> bitsForwardBetween(
-    int iLimit,
+    int bSize,
     int j,
     int i,
     int jTo,
-    int iTo, [
-    int p = 1,
-  ]) sync* {
+    int iTo,
+  ) sync* {
     assert(j >= 0 && j <= jTo && jTo < length);
-    assert(i >= 0 && i < iLimit && iTo > 0 && iTo < iLimit);
+    assert(i >= 0 && i < bSize && iTo > 0 && iTo < bSize);
 
-    final start = p;
-    var bits = this[j] >> i;
-    for (var j = 0; j < jTo; j++, bits = this[j], p = start + iLimit * j) {
-      for (; bits > 0; bits >>= 1, i++) {
+    var bits = this[j] >> i, p = bSize * j + i + 1;
+    for (var j = 0; j < jTo; j++, bits = this[j], p = bSize * j + 1) {
+      for (; bits > 0; bits >>= 1, p++) {
         if (bits & 1 == 1) yield p;
       }
     }
-    final smallest = 1 << iTo;
-    for (; bits >= smallest; bits >>= 1, p++) {
+    for (final limit = p + iTo; p < limit; bits >>= 1, p++) {
       if (bits & 1 == 1) yield p;
     }
   }
@@ -673,37 +647,36 @@ extension TypedIntList on TypedDataList<int> {
     int index,
     int shift,
     int mask,
-    int iLimit, [
-    int p = 1,
-  ]) sync* {
-    assert(index >= 0 && index < length * iLimit && mask + 1 == 1 << shift);
-    if (++index >= length * iLimit - 1) return;
-    yield* bitsForwardFrom(iLimit, index >> shift, index & mask, p);
+    int bSize,
+  ) sync* {
+    assert(index >= 0 && index < length * bSize && mask + 1 == 1 << shift);
+    if (++index >= length * bSize - 1) return;
+    yield* bitsForwardFrom(bSize, index >> shift, index & mask);
   }
 
   ///
   ///
   ///
-  Iterable<int> bitsBackward(int iLimit) sync* {
-    assert(iLimit > 0);
+  Iterable<int> bitsBackward(int bSize) sync* {
+    assert(bSize > 0);
     for (
       var j = length - 1, bits = this[j], m = 1 << bits.bitLength - 1;
       j >= 0;
       j--
     ) {
-      for (final pStart = iLimit * j; m > 0; m >>= 1) {
-        if (bits & m == m) yield pStart + m.bitLength;
+      for (final from = bSize * j; m > 0; m >>= 1) {
+        if (bits & m == m) yield from + m.bitLength;
       }
     }
   }
 
-  Iterable<int> bitsBackwardFrom(int iLimit, int j, int i) sync* {
-    assert(j >= 0 && j < length && i >= 0 && i < iLimit);
+  Iterable<int> bitsBackwardFrom(int bSize, int j, int i) sync* {
+    assert(j >= 0 && j < length && i >= 0 && i < bSize);
 
     var bits = this[j], m = 1 << math.min(i, bits.bitLength - 1);
     while (true) {
-      for (final pStart = iLimit * j; m > 0; m >>= 1) {
-        if (bits & m == m) yield pStart + m.bitLength;
+      for (final from = bSize * j; m > 0; m >>= 1) {
+        if (bits & m == m) yield from + m.bitLength;
       }
       if (--j < 0) return;
       bits = this[j];
@@ -711,47 +684,39 @@ extension TypedIntList on TypedDataList<int> {
     }
   }
 
-  Iterable<int> bitsBackwardTo(int iLimit, int jTo, int iTo) sync* {
-    assert(jTo >= 0 && jTo < length && iTo >= 0 && iTo < iLimit);
+  Iterable<int> bitsBackwardTo(int bSize, int jTo, int iTo) sync* {
+    assert(jTo >= 0 && jTo < length && iTo >= 0 && iTo < bSize);
 
     var j = length - 1, bits = this[j], m = 1 << bits.bitLength - 1;
     for (; j > jTo; j--, bits = this[j], m = 1 << bits.bitLength - 1) {
-      for (final pStart = iLimit * j; m > 0; m >>= 1) {
-        if (bits & m == m) yield pStart + m.bitLength;
+      for (final from = bSize * j; m > 0; m >>= 1) {
+        if (bits & m == m) yield from + m.bitLength;
       }
     }
-    assert(bits.bitLength <= iLimit);
-    for (
-      final smallest = 1 << iTo, pStart = iLimit * j;
-      m >= smallest;
-      m >>= 1
-    ) {
-      if (bits & m == m) yield pStart + m.bitLength;
+    assert(bits.bitLength <= bSize);
+    for (final smallest = 1 << iTo, from = bSize * j; m >= smallest; m >>= 1) {
+      if (bits & m == m) yield from + m.bitLength;
     }
   }
 
   Iterable<int> bitsBackwardBetween(
-    int iLimit,
+    int bSize,
     int j,
     int i,
     int jTo,
     int iTo,
   ) sync* {
     assert(jTo >= 0 && jTo <= j && j < length);
-    assert(iTo >= 0 && iTo < iLimit && i >= 0 && i < iLimit);
+    assert(iTo >= 0 && iTo < bSize && i >= 0 && i < bSize);
 
     var bits = this[j], m = 1 << math.min(i, bits.bitLength - 1);
     for (; j > jTo; j--, bits = this[j], m = 1 << bits.bitLength - 1) {
-      for (final pStart = iLimit * j; m > 0; m >>= 1) {
-        if (bits & m == m) yield pStart + m.bitLength;
+      for (final from = bSize * j; m > 0; m >>= 1) {
+        if (bits & m == m) yield from + m.bitLength;
       }
     }
-    for (
-      final smallest = 1 << iTo, pStart = iLimit * j;
-      m >= smallest;
-      m >>= 1
-    ) {
-      if (bits & m == m) yield pStart + m.bitLength;
+    for (final smallest = 1 << iTo, from = bSize * j; m >= smallest; m >>= 1) {
+      if (bits & m == m) yield from + m.bitLength;
     }
   }
 
@@ -759,10 +724,10 @@ extension TypedIntList on TypedDataList<int> {
     int index,
     int shift,
     int mask,
-    int iLimit,
+    int bSize,
   ) sync* {
-    assert(index >= 0 && index < length * iLimit && mask + 1 == 1 << shift);
+    assert(index >= 0 && index < length * bSize && mask + 1 == 1 << shift);
     if (--index < 1) return;
-    yield* bitsBackwardFrom(iLimit, index >> shift, index & mask);
+    yield* bitsBackwardFrom(bSize, index >> shift, index & mask);
   }
 }

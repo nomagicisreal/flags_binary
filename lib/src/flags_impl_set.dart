@@ -40,30 +40,29 @@ mixin _MSetField
   Iterable<int> get availables => _field.bitsForward(_sizeEach);
 
   @override
-  Iterable<int> availablesRecent([int from = 0, int? to]) {
-    assert(from >= 0 && (to == null || from <= to));
-    throw UnimplementedError();
-    // final int shift = _shift, mask = _mask, jFrom, iFrom, jTo, iTo;
-    // if (from == 0) {
-    //   jFrom = 0;
-    //   iFrom = 0;
-    // } else {
-    //   jFrom = from >> shift;
-    //   iFrom = from & mask;
-    // }
-    // if (to == null) {
-    //   jTo = _field.length - 1;
-    //   iTo = _sizeEach - 1;
-    // } else {
-    //   jTo = to >> shift;
-    //   iTo = to & mask;
-    // }
-    // return _field.bitsForwardBetween(_sizeEach, jFrom, iFrom, jTo, iTo);
+  Iterable<int> availablesRecent(int from, [int? to]) {
+    assert(from > 0);
+    assert(to == null || (from <= to && to <= _field.length * _sizeEach));
+    final int shift = _shift, mask = _mask, jTo, iTo;
+    if (to == null) {
+      jTo = _field.length - 1;
+      iTo = _sizeEach - 1;
+    } else {
+      jTo = --to >> shift;
+      iTo = to & mask;
+    }
+    return _field.bitsForwardBetween(
+      _sizeEach,
+      --from >> shift,
+      from & mask,
+      jTo,
+      iTo,
+    );
   }
 
   @override
   Iterable<int> availablesLatest(int from, [int to = 0]) {
-    assert(to >= 0 && to <= from);
+    assert(to >= 0 && to <= from && from <= _field.length * _sizeEach);
     final shift = _shift, mask = _mask, bFrom = from - 1;
     return _field.bitsBackwardBetween(
       _sizeEach,
@@ -285,12 +284,12 @@ mixin _MSetSlot<I, T>
 ///
 mixin _MSetBitsField<T> on _MBitsField implements _AFieldSet<T, T> {
   @override
-  void includesSub(T begin, [T? limit]) => _sub(_pSet, begin, limit);
+  void includesSub(T start, [T? limit]) => _sub(_bSet, start, limit);
 
   @override
-  void excludesSub(T begin, [T? limit]) => _sub(_pClear, begin, limit);
+  void excludesSub(T start, [T? limit]) => _sub(_bClear, start, limit);
 
-  void _sub(void Function(int) consume, T from, T? last);
+  void _sub(void Function(int) consume, T start, T? limit);
 }
 
 ///
@@ -299,11 +298,11 @@ mixin _MSetBitsField<T> on _MBitsField implements _AFieldSet<T, T> {
 mixin _MSetBitsFieldSpatial1
     implements _MFlagsContainerSpatial1<bool>, _MSetBitsField<int> {
   @override
-  void _sub(void Function(int) consume, int from, int? last) {
-    assert(validateIndex(from) && (last == null || (validateIndex(last))));
-    final iLast = last ?? spatial1;
-    for (var i = from; i <= iLast; i++) {
-      consume(i);
+  void _sub(void Function(int) consume, int start, int? limit) {
+    assert(validateIndex(start) && (limit == null || (validateIndex(limit))));
+    final bLimit = limit ?? spatial1;
+    for (var b = start; b < bLimit; b++) {
+      consume(b);
     }
   }
 }
@@ -311,14 +310,14 @@ mixin _MSetBitsFieldSpatial1
 mixin _MSetBitsFieldSpatial2
     implements _MFlagsContainerSpatial2<bool>, _MSetBitsField<(int, int)> {
   @override
-  void _sub(void Function(int) consume, (int, int) from, (int, int)? last) {
-    assert(validateIndex(from) && (last == null || validateIndex(last)));
+  void _sub(void Function(int) consume, (int, int) start, (int, int)? limit) {
+    assert(validateIndex(start) && (limit == null || validateIndex(limit)));
     final spatial2 = this.spatial2,
-        end = last ?? (spatial1, spatial2),
-        jFrom = from.$1,
+        end = limit ?? (spatial1, spatial2),
+        jFrom = start.$1,
         jEnd = end.$1,
         iEnd = end.$2;
-    var i = from.$2, index = (jFrom - 1) * spatial2 + i;
+    var i = start.$2, index = (jFrom - 1) * spatial2 + i;
 
     if (jFrom < jEnd) {
       index = consume.iteratingI(i, spatial2, index);
@@ -337,19 +336,19 @@ mixin _MSetBitsFieldSpatial3
   @override
   void _sub(
     void Function(int) consume,
-    (int, int, int) from,
-    (int, int, int)? last,
+    (int, int, int) start,
+    (int, int, int)? limit,
   ) {
-    assert(validateIndex(from) && (last == null || validateIndex(last)));
+    assert(validateIndex(start) && (limit == null || validateIndex(limit)));
     final spatial2 = this.spatial2,
         spatial3 = this.spatial3,
-        end = last ?? (spatial1, spatial2, spatial3),
-        kFrom = from.$1,
+        end = limit ?? (spatial1, spatial2, spatial3),
+        kFrom = start.$1,
         kEnd = end.$1,
         jEnd = end.$2,
         iEnd = end.$3;
-    var j = from.$2,
-        i = from.$3,
+    var j = start.$2,
+        i = start.$3,
         index = ((kFrom - 1) * spatial2 + j - 1) * spatial3 + i;
 
     if (kFrom < kEnd) {
@@ -385,22 +384,22 @@ mixin _MSetBitsFieldSpatial4
   @override
   void _sub(
     void Function(int) consume,
-    (int, int, int, int) from,
-    (int, int, int, int)? last,
+    (int, int, int, int) start,
+    (int, int, int, int)? limit,
   ) {
-    assert(validateIndex(from) && (last == null || validateIndex(last)));
+    assert(validateIndex(start) && (limit == null || validateIndex(limit)));
     final s2 = spatial2,
         s3 = spatial3,
         s4 = spatial4,
-        end = last ?? (spatial1, s2, s3, s4),
-        lFrom = from.$1,
+        end = limit ?? (spatial1, s2, s3, s4),
+        lFrom = start.$1,
         lEnd = end.$1,
         kEnd = end.$2,
         jEnd = end.$3,
         iEnd = end.$4;
-    var k = from.$2,
-        j = from.$3,
-        i = from.$4,
+    var k = start.$2,
+        j = start.$3,
+        i = start.$4,
         index = (((lFrom - 1) * s2 + k - 1) * s3 + j - 1) * s4 + i;
 
     if (lFrom < lEnd) {

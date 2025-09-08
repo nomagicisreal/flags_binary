@@ -130,9 +130,9 @@ abstract class _AFieldBits implements _PFlags {
 }
 
 abstract class _AFieldSet<I, T> implements _AFlagsSet<I, T> {
-  void includesSub(T begin, [T? limit]);
+  void includesSub(T start, [T? limit]);
 
-  void excludesSub(T begin, [T? limit]);
+  void excludesSub(T start, [T? limit]);
 }
 
 //
