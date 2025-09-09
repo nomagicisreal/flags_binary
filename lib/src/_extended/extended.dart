@@ -561,7 +561,7 @@ extension TypedIntList on TypedDataList<int> {
     }
   }
 
-  Iterable<int> datesBackwardOf(
+  Iterable<(int, int, int)> datesBackwardOf(
     int j,
     int y,
     int m, [
@@ -578,7 +578,7 @@ extension TypedIntList on TypedDataList<int> {
       d--
     ) {
       final mask = 1 << d;
-      if (bits & mask == mask) yield d;
+      if (bits & mask == mask) yield (y, m, d);
     }
   }
 
@@ -617,7 +617,7 @@ extension TypedIntList on TypedDataList<int> {
         if (bits & 1 == 1) yield p;
       }
     }
-    for (final limit = p + iTo; p < limit; bits >>= 1, p++) {
+    for (final last = p + iTo; p <= last; bits >>= 1, p++) {
       if (bits & 1 == 1) yield p;
     }
   }
@@ -633,12 +633,12 @@ extension TypedIntList on TypedDataList<int> {
     assert(i >= 0 && i < bSize && iTo > 0 && iTo < bSize);
 
     var bits = this[j] >> i, p = bSize * j + i + 1;
-    for (var j = 0; j < jTo; j++, bits = this[j], p = bSize * j + 1) {
+    for (; j < jTo; j++, bits = this[j], p = bSize * j + 1) {
       for (; bits > 0; bits >>= 1, p++) {
         if (bits & 1 == 1) yield p;
       }
     }
-    for (final limit = p + iTo; p < limit; bits >>= 1, p++) {
+    for (final last = p + iTo; p <= last; bits >>= 1, p++) {
       if (bits & 1 == 1) yield p;
     }
   }
@@ -697,7 +697,7 @@ extension TypedIntList on TypedDataList<int> {
         if (bits & 1 == 1) yield mapper(p);
       }
     }
-    for (final limit = p + iTo; p < limit; bits >>= 1, p++) {
+    for (final last = p + iTo; p <= last; bits >>= 1, p++) {
       if (bits & 1 == 1) yield mapper(p);
     }
   }
@@ -714,12 +714,12 @@ extension TypedIntList on TypedDataList<int> {
     assert(i >= 0 && i < bSize && iTo > 0 && iTo < bSize);
 
     var bits = this[j] >> i, p = bSize * j + i + 1;
-    for (var j = 0; j < jTo; j++, bits = this[j], p = bSize * j + 1) {
+    for (; j < jTo; j++, bits = this[j], p = bSize * j + 1) {
       for (; bits > 0; bits >>= 1, p++) {
         if (bits & 1 == 1) yield mapper(p);
       }
     }
-    for (final limit = p + iTo; p < limit; bits >>= 1, p++) {
+    for (final last = p + iTo; p <= last; bits >>= 1, p++) {
       if (bits & 1 == 1) yield mapper(p);
     }
   }

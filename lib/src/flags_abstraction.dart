@@ -99,14 +99,16 @@ abstract class _AFlagsSet<I, T> implements _PFlags {
 
   T? lastBefore(I index);
 
-  Iterable<T> get availables;
+  Iterable<T> get availablesForward;
+
+  Iterable<T> get availablesBackward;
 
   ///
   /// to prevent duplicate implementation, there is no [availablesFrom] or [availablesTo]
   ///
-  Iterable<T> availablesRecent(I from, [I to]);
+  Iterable<T> availablesRecent([I from, I to]);
 
-  Iterable<T> availablesLatest(I from, [I to]);
+  Iterable<T> availablesLatest([I from, I to]);
 }
 
 ///
@@ -130,9 +132,9 @@ abstract class _AFieldBits implements _PFlags {
 }
 
 abstract class _AFieldSet<I, T> implements _AFlagsSet<I, T> {
-  void includesSub(T start, [T? limit]);
+  void includesSub(T from, [T? last]);
 
-  void excludesSub(T start, [T? limit]);
+  void excludesSub(T from, [T? last]);
 }
 
 //

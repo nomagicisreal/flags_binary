@@ -206,7 +206,7 @@ mixin _MSetFieldMonthsDatesScoped
   ///
   /// [availableYears]
   /// [availableMonths]
-  /// [availables]
+  /// [availablesForward]
   ///
   Iterable<int> get availableYears sync* {
     const january = DateTime.january, december = DateTime.december;
@@ -267,7 +267,7 @@ mixin _MSetFieldMonthsDatesScoped
   }
 
   @override
-  Iterable<(int, int, int)> get availables sync* {
+  Iterable<(int, int, int)> get availablesForward sync* {
     const january = DateTime.january, december = DateTime.december;
     final begin = this.begin,
         field = _field,
@@ -282,6 +282,26 @@ mixin _MSetFieldMonthsDatesScoped
       if (m > december) {
         y++;
         m = january;
+      }
+    }
+  }
+
+  @override
+  Iterable<(int, int, int)> get availablesBackward sync* {
+    const january = DateTime.january, december = DateTime.december;
+    final begin = this.begin,
+        field = _field,
+        length = field.length,
+        datesOf = field.datesBackwardOf;
+    var y = begin.$1, m = begin.$2, j = length - 1;
+    while (true) {
+      yield* datesOf(j, y, m);
+      j--;
+      if (j < 0) return;
+      m--;
+      if (m < january) {
+        y--;
+        m = december;
       }
     }
   }
@@ -331,7 +351,7 @@ mixin _MSetFieldMonthsDatesScoped
   ///
 
   ///
-  /// 1. [from] == null && [to] == null: take [availables]
+  /// 1. [from] == null && [to] == null: take [availablesForward]
   /// 2. date [from] && date [to]: take available dates [from] ~ [to]
   /// 3. date [from] && [to] == null: take available dates [from] ~ [last]
   /// 4. [from] == null && date [to]: take available dates [first] ~ [to]
@@ -346,26 +366,28 @@ mixin _MSetFieldMonthsDatesScoped
       return _isValidDate(from) && _isValidDate(to) && from < to;
     }(), 'invalid scope: ($from, $to)');
 
-    if (from == null && to == null) {
-      yield* availables;
+    final isFromFirst = from == null, isToLast = to == null;
+    if (isFromFirst && isToLast) {
+      yield* availablesForward;
       return;
     }
 
-    const january = DateTime.january, december = DateTime.december;
     final end = this.end,
         begin = this.begin,
         yEnd = end.$1,
         yBegin = begin.$1,
         mEnd = end.$2,
-        mBegin = begin.$2;
+        mBegin = begin.$2,
+        indexOf = begin.monthsToYearMonth;
 
     // ensure from
     final int dFrom;
-    int y, m;
-    if (from == null) {
+    int y, m, j;
+    if (isFromFirst) {
       y = yBegin;
       m = mBegin;
       dFrom = 1;
+      j = 0;
     } else {
       y = from.$1;
       if (y > yEnd) return;
@@ -373,36 +395,36 @@ mixin _MSetFieldMonthsDatesScoped
       if (y == yEnd && mFrom > mEnd) return;
       m = y == yBegin ? math.max(mBegin, mFrom) : mFrom;
       dFrom = from.$3;
+      j = indexOf(y, m);
     }
 
     // ensure to
-    final int toY, toM, dTo;
-    if (to == null) {
-      toY = yEnd;
-      toM = mEnd;
+    final int yTo, mTo, dTo;
+    if (isToLast) {
+      yTo = yEnd;
+      mTo = mEnd;
       dTo = _monthDaysOf(yEnd, mEnd);
     } else {
-      toY = to.$1;
-      if (toY < yBegin) return;
-      final mTo = to.$2;
-      if (y == yBegin && mTo < mBegin) return;
-      toM = y == yEnd ? math.min(mEnd, mTo) : mTo;
+      yTo = to.$1;
+      if (yTo < yBegin) return;
+      final toM = to.$2;
+      if (y == yBegin && toM < mBegin) return;
+      mTo = y == yEnd ? math.min(mEnd, toM) : toM;
       dTo = to.$3;
     }
 
-    final field = _field,
-        datesOfFixed = field.datesForwardOfBetween,
-        indexOf = begin.monthsToYearMonth;
+    final field = _field, datesOfBetween = field.datesForwardOfBetween;
 
     // inside a month
-    if (y == toY && m == toM) {
-      yield* datesOfFixed(indexOf(y, m), y, m, dTo, dFrom);
+    if (y == yTo && m == mTo) {
+      yield* datesOfBetween(j, y, m, dTo, dFrom);
       return;
     }
 
     // first month -> intermediate month -> last month
-    final datesOf = field.datesForwardOf, iLast = indexOf(toY, toM);
-    var j = indexOf(y, m);
+    const january = DateTime.january, december = DateTime.december;
+    final datesOf = field.datesForwardOf, jLast = indexOf(yTo, mTo);
+    assert(j < jLast);
     yield* datesOf(j, y, m, dFrom);
     while (true) {
       j++;
@@ -411,36 +433,112 @@ mixin _MSetFieldMonthsDatesScoped
         y++;
         m = january;
       }
-      if (j == iLast) break;
+      if (j == jLast) break;
       yield* datesOf(j, y, m);
     }
-    yield* datesOfFixed(j, y, m, dTo);
+    yield* datesOfBetween(j, y, m, dTo);
   }
 
   ///
-  /// 1. [from] == null && [to] == null: take [availables]
+  /// 1. [from] == null && [to] == null: take [availablesForward]
   /// 2. date [from] && date [to]: take available dates [from] ~ [to]
-  /// 3. date [from] && [to] == null: take available dates [from] ~ [last]
-  /// 4. [from] == null && date [to]: take available dates [first] ~ [to]
+  /// 3. date [from] && [to] == null: take available dates [from] ~ [first]
+  /// 4. [from] == null && date [to]: take available dates [last] ~ [to]
   ///
   @override
-  Iterable<(int, int, int)> availablesLatest(
-    (int, int, int) from, [
+  Iterable<(int, int, int)> availablesLatest([
+    (int, int, int)? from,
     (int, int, int)? to,
   ]) sync* {
-    throw UnimplementedError();
+    assert(() {
+      if (from == null || to == null) return true;
+      return _isValidDate(from) && _isValidDate(to) && to < from;
+    }(), 'invalid scope: ($from, $to)');
+
+    final isFromLast = from == null, isToFirst = to == null;
+    if (isFromLast && isToFirst) {
+      yield* availablesBackward;
+      return;
+    }
+
+    final end = this.end,
+        begin = this.begin,
+        yEnd = end.$1,
+        yBegin = begin.$1,
+        mEnd = end.$2,
+        mBegin = begin.$2,
+        field = _field,
+        indexOf = begin.monthsToYearMonth;
+
+    // ensure from
+    final int dFrom;
+    int y, m, j;
+    if (isFromLast) {
+      y = yEnd;
+      m = mEnd;
+      dFrom = _monthDaysOf(yEnd, mEnd);
+      j = field.length - 1;
+    } else {
+      y = from.$1;
+      if (y < yBegin) return;
+      final mFrom = from.$2;
+      if (y == yBegin && mFrom < mBegin) return;
+      m = y == yEnd ? math.min(mEnd, mFrom) : mFrom;
+      dFrom = from.$3;
+      j = indexOf(y, m);
+    }
+
+    // ensure to
+    final int yTo, mTo, dTo;
+    if (isToFirst) {
+      yTo = yBegin;
+      mTo = mBegin;
+      dTo = 1;
+    } else {
+      yTo = to.$1;
+      if (yTo > yEnd) return;
+      final toM = to.$2;
+      if (y == yEnd && toM > mEnd) return;
+      mTo = y == yBegin ? math.max(mBegin, toM) : toM;
+      dTo = to.$3;
+    }
+
+    final datesOf = field.datesBackwardOf;
+
+    // inside a month
+    if (y == yTo && m == mTo) {
+      yield* datesOf(j, y, m, dFrom, dTo);
+      return;
+    }
+
+    // last month -> intermediate month -> first month
+    const january = DateTime.january, december = DateTime.december;
+    final jLast = indexOf(yTo, mTo);
+    assert(j > jLast);
+    yield* datesOf(j, y, m, dFrom);
+    while (true) {
+      j--;
+      m--;
+      if (m < january) {
+        y--;
+        m = december;
+      }
+      if (j == jLast) break;
+      yield* datesOf(j, y, m);
+    }
+    yield* datesOf(j, y, m, dTo);
   }
 }
 
 mixin _MSetBitsFieldMonthsDates on _MBitsFieldMonthsDates
     implements _AFieldSet<(int, int, int), (int, int, int)> {
   @override
-  void includesSub((int, int, int) start, [(int, int, int)? limit]) =>
-      _sub(_bSet, start, limit);
+  void includesSub((int, int, int) from, [(int, int, int)? last]) =>
+      _sub(_bSet, from, last);
 
   @override
-  void excludesSub((int, int, int) start, [(int, int, int)? limit]) =>
-      _sub(_bClear, start, limit);
+  void excludesSub((int, int, int) from, [(int, int, int)? last]) =>
+      _sub(_bClear, from, last);
 
   void _sub(
     void Function(int, int, int) consume,

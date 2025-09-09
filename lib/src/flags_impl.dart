@@ -410,7 +410,7 @@ mixin _MOnFieldSpatial2 on _MOnFlagsIndexSub<Field, (int, int), int>
         shift = result._shift,
         mask = result._mask;
     for (var b = 0; b < spatial2; b++) {
-      final bSource = b + start;
+      final bSource = start + b;
       if (source[bSource >> sourceShift] >> (bSource & sourceMask) & 1 == 1) {
         field[b >> shift] |= 1 << (b & mask);
       }
@@ -446,7 +446,7 @@ mixin _MOnFieldSpatial3
         mask = result._mask;
     for (var j = 0, b = 0; j < spatial2; j++) {
       for (var i = 0; i < spatial3; i++, b++) {
-        final bSource = b + start;
+        final bSource = start + b;
         if (source[bSource >> sourceShift] >> (bSource & sourceMask) & 1 == 1) {
           field[b >> shift] |= 1 << (b & mask);
         }
@@ -486,7 +486,7 @@ mixin _MOnFieldSpatial4
     for (var k = 0, b = 0; k < spatial2; k++) {
       for (var j = 0; j < spatial3; j++) {
         for (var i = 0; i < spatial4; i++, b++) {
-          final bSource = b + start;
+          final bSource = start + b;
           if (source[bSource >> sShift] >> (bSource & sMask) & 1 == 1) {
             field[b >> shift] |= 1 << (b & mask);
           }

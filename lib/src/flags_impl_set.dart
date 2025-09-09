@@ -37,22 +37,29 @@ mixin _MSetField
       _field.bLastBefore(index, _shift, _mask, _sizeEach);
 
   @override
-  Iterable<int> get availables => _field.bitsForward(_sizeEach);
+  Iterable<int> get availablesForward => _field.bitsForward(_sizeEach);
 
   @override
-  Iterable<int> availablesRecent(int from, [int? to]) {
-    assert(from > 0);
-    assert(to == null || (from <= to && to <= _field.length * _sizeEach));
-    final int shift = _shift, mask = _mask, jTo, iTo;
+  Iterable<int> get availablesBackward => _field.bitsBackward(_sizeEach);
+
+  @override
+  Iterable<int> availablesRecent([int from = 1, int? to]) {
+    assert(() {
+      if (from == 1 || to == null) return true;
+      return from <= to && to <= _field.length * _sizeEach;
+    }(), 'invalid scope: ($from, $to)');
+
+    final shift = _shift, mask = _mask, field = _field, sizeEach = _sizeEach;
+    final int jTo, iTo;
     if (to == null) {
-      jTo = _field.length - 1;
-      iTo = _sizeEach - 1;
+      jTo = field.length - 1;
+      iTo = sizeEach - 1;
     } else {
       jTo = --to >> shift;
       iTo = to & mask;
     }
-    return _field.bitsForwardBetween(
-      _sizeEach,
+    return field.bitsForwardBetween(
+      sizeEach,
       --from >> shift,
       from & mask,
       jTo,
@@ -61,11 +68,19 @@ mixin _MSetField
   }
 
   @override
-  Iterable<int> availablesLatest(int from, [int to = 0]) {
-    assert(to >= 0 && to <= from && from <= _field.length * _sizeEach);
-    final shift = _shift, mask = _mask, bFrom = from - 1;
-    return _field.bitsBackwardBetween(
-      _sizeEach,
+  Iterable<int> availablesLatest([int? from, int to = 1]) {
+    assert(() {
+      if (from == null || to == 0) return true;
+      return to <= from && from <= _field.length * _sizeEach;
+    }(), 'invalid scope: ($from, $to)');
+
+    final shift = _shift,
+        mask = _mask,
+        field = _field,
+        sizeEach = _sizeEach,
+        bFrom = (from ?? field.length * sizeEach) - 1;
+    return field.bitsBackwardBetween(
+      sizeEach,
       bFrom >> shift,
       bFrom & mask,
       to >> shift,
@@ -95,60 +110,76 @@ mixin _MSetFieldIndexable<T> on _MFieldContainerPositionAble<T>
       .nullOrMap(_indexOf);
 
   @override
-  Iterable<T> get availables => _field.bitsForwardMap(_indexOf, _sizeEach);
+  Iterable<T> get availablesForward =>
+      _field.bitsForwardMap(_indexOf, _sizeEach);
 
   @override
-  Iterable<T> availablesRecent(T from, [T? to]) {
+  Iterable<T> get availablesBackward =>
+      _field.bitsBackwardMap(_indexOf, _sizeEach);
+
+  @override
+  Iterable<T> availablesRecent([T? from, T? to]) {
     assert(() {
-      final pFrom = _bOf(from);
-      if (pFrom < 1) return false;
-      if (to == null) return true;
+      if (from == null || to == null) return true;
+      final bFrom = _bOf(from);
+      if (bFrom < 0) return false;
       final pTo = _bOf(to);
-      return pFrom <= pTo && pTo <= _field.length * _sizeEach;
+      return bFrom <= pTo && pTo <= _field.length * _sizeEach;
     }());
-    final int shift = _shift, mask = _mask, pFrom = _bOf(from);
+
+    final shift = _shift,
+        mask = _mask,
+        field = _field,
+        sizeEach = _sizeEach,
+        bFrom = from == null ? 0 : _bOf(from);
     final int jT, iT;
     if (to == null) {
-      jT = _field.length - 1;
-      iT = _sizeEach - 1;
+      jT = field.length - 1;
+      iT = sizeEach - 1;
     } else {
       final pTo = _bOf(to);
       jT = pTo >> shift;
       iT = pTo & mask;
     }
-    return _field.bitsForwardMapBetween(
+    return field.bitsForwardMapBetween(
       _indexOf,
-      _sizeEach,
-      pFrom >> shift,
-      pFrom & mask,
+      sizeEach,
+      bFrom >> shift,
+      bFrom & mask,
       jT,
       iT,
     );
   }
 
   @override
-  Iterable<T> availablesLatest(T from, [T? to]) {
+  Iterable<T> availablesLatest([T? from, T? to]) {
     assert(() {
+      if (from == null || to == null) return true;
       final pFrom = _bOf(from);
-      if (pFrom < 1) return false;
-      if (to == null) return true;
+      if (pFrom < 0) return false;
       final pTo = _bOf(to);
       return pTo >= 0 && pTo <= pFrom && pFrom <= _field.length * _sizeEach;
     }());
-    final int shift = _shift, mask = _mask, pFrom = _bOf(from), jTo, iTo;
+    final shift = _shift,
+        mask = _mask,
+        field = _field,
+        length = field.length,
+        sizeEach = _sizeEach,
+        bFrom = from == null ? length * sizeEach - 1 : _bOf(from);
+    final int jTo, iTo;
     if (to == null) {
-      jTo = _field.length - 1;
-      iTo = _sizeEach - 1;
+      jTo = length - 1;
+      iTo = sizeEach - 1;
     } else {
       final pTo = _bOf(to);
       jTo = pTo >> shift;
       iTo = pTo & mask;
     }
-    return _field.bitsBackwardMapBetween(
+    return field.bitsBackwardMapBetween(
       _indexOf,
-      _sizeEach,
-      pFrom >> shift,
-      pFrom & mask,
+      sizeEach,
+      bFrom >> shift,
+      bFrom & mask,
       jTo,
       iTo,
     );
@@ -206,38 +237,51 @@ mixin _MSetSlot<I, T>
   }
 
   @override
-  Iterable<T> get availables => _slot.filterNotNull;
+  Iterable<T> get availablesForward => _slot.forwardFilterNotNull;
 
   @override
-  Iterable<T> availablesLatest(I from, [I? to]) sync* {
-    throw UnimplementedError();
-    // final slot = _slot, last = slot.length - 1;
-    // var p = inclusive ? _positionOf(index) : _positionOf(index) - 1;
-    // if (p < 0) return;
-    // if (p > last) p = last;
-    // for (; p >= 0; p--) {
-    //   final s = slot[p];
-    //   if (s != null) yield s;
-    // }
-  }
+  Iterable<T> get availablesBackward => _slot.backwardFilterNotNull;
 
   @override
   Iterable<T> availablesRecent([I? from, I? to]) sync* {
     final slot = _slot, length = slot.length, last = length - 1;
-    var p = from == null ? 0 : _bOf(from);
+    var b = from == null ? 0 : _bOf(from);
+    if (b > last) return;
+
     final int pLast;
     if (to == null) {
       pLast = last;
     } else {
       final pTo = _bOf(to);
-      assert(p <= pTo, 'invalid index($from, $to) -> position($p, $pTo)');
+      assert(b <= pTo, 'invalid index($from, $to) -> position($b, $pTo)');
       if (pTo < 0) return;
       pLast = math.min(pTo, last);
     }
-    if (p > last) return;
-    if (p < 0) p = 0;
-    for (; p < pLast; p++) {
-      final s = slot[p];
+    if (b < 0) b = 0;
+    for (; b <= pLast; b++) {
+      final s = slot[b];
+      if (s != null) yield s;
+    }
+  }
+
+  @override
+  Iterable<T> availablesLatest([I? from, I? to]) sync* {
+    final slot = _slot, length = slot.length, last = length - 1;
+    var b = from == null ? last : _bOf(from);
+    if (b < 0) return;
+
+    final int pLast;
+    if (to == null) {
+      pLast = 0;
+    } else {
+      final pTo = _bOf(to);
+      assert(b >= pTo, 'invalid index($from, $to) -> position($b, $pTo)');
+      if (pTo > last) return;
+      pLast = math.max(pTo, 0);
+    }
+    if (b > last) b = last;
+    for (; b >= pLast; b--) {
+      final s = slot[b];
       if (s != null) yield s;
     }
   }
@@ -303,12 +347,12 @@ mixin _MSetSlot<I, T>
 ///
 mixin _MSetBitsField<T> on _MBitsField implements _AFieldSet<T, T> {
   @override
-  void includesSub(T start, [T? limit]) => _sub(_bSet, start, limit);
+  void includesSub(T from, [T? last]) => _sub(_bSet, from, last);
 
   @override
-  void excludesSub(T start, [T? limit]) => _sub(_bClear, start, limit);
+  void excludesSub(T from, [T? last]) => _sub(_bClear, from, last);
 
-  void _sub(void Function(int) consume, T start, T? limit);
+  void _sub(void Function(int) consume, T from, T? last);
 }
 
 ///
@@ -317,10 +361,10 @@ mixin _MSetBitsField<T> on _MBitsField implements _AFieldSet<T, T> {
 mixin _MSetBitsFieldSpatial1
     implements _MFlagsContainerSpatial1<bool>, _MSetBitsField<int> {
   @override
-  void _sub(void Function(int) consume, int start, int? limit) {
-    assert(validateIndex(start) && (limit == null || (validateIndex(limit))));
-    final bLimit = limit ?? spatial1;
-    for (var b = start; b < bLimit; b++) {
+  void _sub(void Function(int) consume, int from, int? last) {
+    assert(validateIndex(from) && (last == null || (validateIndex(last))));
+    final bLimit = last ?? spatial1;
+    for (var b = from - 1; b < bLimit; b++) {
       consume(b);
     }
   }
@@ -329,22 +373,22 @@ mixin _MSetBitsFieldSpatial1
 mixin _MSetBitsFieldSpatial2
     implements _MFlagsContainerSpatial2<bool>, _MSetBitsField<(int, int)> {
   @override
-  void _sub(void Function(int) consume, (int, int) start, (int, int)? limit) {
-    assert(validateIndex(start) && (limit == null || validateIndex(limit)));
+  void _sub(void Function(int) consume, (int, int) from, (int, int)? last) {
+    assert(validateIndex(from) && (last == null || validateIndex(last)));
     final spatial2 = this.spatial2,
-        end = limit ?? (spatial1, spatial2),
-        jFrom = start.$1,
-        jEnd = end.$1,
-        iEnd = end.$2;
-    var i = start.$2, index = (jFrom - 1) * spatial2 + i;
+        fJ = from.$1,
+        fI = from.$2,
+        lJ = last?.$1 ?? spatial1,
+        lI = last?.$2 ?? spatial2;
+    var bI = fI - 1, index = (fJ - 1) * spatial2 + bI;
 
-    if (jFrom < jEnd) {
-      index = consume.iteratingI(i, spatial2, index);
-      index = consume.iteratingJ(jFrom + 1, jEnd - 1, spatial2, index);
-      i = 1;
+    if (fJ < lJ) {
+      index = consume.iteratingI(bI, spatial2, index);
+      index = consume.iteratingJ(fJ, lJ - 1, spatial2, index);
+      bI = 0;
     }
 
-    for (; i <= iEnd; i++, index++) {
+    for (; bI < lI; bI++, index++) {
       consume(index);
     }
   }
@@ -355,42 +399,37 @@ mixin _MSetBitsFieldSpatial3
   @override
   void _sub(
     void Function(int) consume,
-    (int, int, int) start,
-    (int, int, int)? limit,
+    (int, int, int) from,
+    (int, int, int)? last,
   ) {
-    assert(validateIndex(start) && (limit == null || validateIndex(limit)));
+    assert(validateIndex(from) && (last == null || validateIndex(last)));
     final spatial2 = this.spatial2,
         spatial3 = this.spatial3,
-        end = limit ?? (spatial1, spatial2, spatial3),
-        kFrom = start.$1,
-        kEnd = end.$1,
-        jEnd = end.$2,
-        iEnd = end.$3;
-    var j = start.$2,
-        i = start.$3,
-        index = ((kFrom - 1) * spatial2 + j - 1) * spatial3 + i;
+        fK = from.$1,
+        fJ = from.$2,
+        fI = from.$3,
+        lK = last?.$1 ?? spatial1,
+        lJ = last?.$2 ?? spatial2,
+        lI = last?.$3 ?? spatial3;
+    var bJ = fJ - 1,
+        bI = fI - 1,
+        index = ((fK - 1) * spatial2 + bJ) * spatial3 + bI;
 
-    if (kFrom < kEnd) {
-      index = consume.iteratingI(i, spatial3, index);
-      index = consume.iteratingJ(j + 1, spatial2, spatial3, index);
-      index = consume.iteratingK(
-        kFrom + 1,
-        kEnd - 1,
-        spatial2,
-        spatial3,
-        index,
-      );
-      j = 1;
-      i = 1;
+    if (fK < lK) {
+      index = consume.iteratingI(bI, spatial3, index);
+      index = consume.iteratingJ(bJ, spatial2, spatial3, index);
+      index = consume.iteratingK(fK, lK - 1, spatial2, spatial3, index);
+      bJ = 0;
+      bI = 0;
     }
 
-    if (j < jEnd) {
-      index = consume.iteratingI(i, spatial3, index);
-      index = consume.iteratingJ(j + 1, jEnd - 1, spatial3, index);
-      i = 1;
+    if (fJ < lJ) {
+      index = consume.iteratingI(bI, spatial3, index);
+      index = consume.iteratingJ(fJ, lJ - 1, spatial3, index);
+      bI = 0;
     }
 
-    for (; i <= iEnd; i++, index++) {
+    for (; bI < lI; bI++, index++) {
       consume(index);
     }
   }
@@ -403,49 +442,51 @@ mixin _MSetBitsFieldSpatial4
   @override
   void _sub(
     void Function(int) consume,
-    (int, int, int, int) start,
-    (int, int, int, int)? limit,
+    (int, int, int, int) from,
+    (int, int, int, int)? last,
   ) {
-    assert(validateIndex(start) && (limit == null || validateIndex(limit)));
+    assert(validateIndex(from) && (last == null || validateIndex(last)));
     final s2 = spatial2,
         s3 = spatial3,
         s4 = spatial4,
-        end = limit ?? (spatial1, s2, s3, s4),
-        lFrom = start.$1,
-        lEnd = end.$1,
-        kEnd = end.$2,
-        jEnd = end.$3,
-        iEnd = end.$4;
-    var k = start.$2,
-        j = start.$3,
-        i = start.$4,
-        index = (((lFrom - 1) * s2 + k - 1) * s3 + j - 1) * s4 + i;
+        fL = from.$1,
+        fK = from.$2,
+        fJ = from.$3,
+        fI = from.$4,
+        lL = last?.$1 ?? spatial1,
+        lK = last?.$2 ?? spatial2,
+        lJ = last?.$3 ?? spatial3,
+        lI = last?.$4 ?? spatial4;
+    var bK = fK - 1,
+        bJ = fJ - 1,
+        bI = fI - 1,
+        index = (((fL - 1) * s2 + bK) * s3 + bJ) * s4 + bI;
 
-    if (lFrom < lEnd) {
-      index = consume.iteratingI(i, s4, index);
-      index = consume.iteratingJ(j + 1, s3, s4, index);
-      index = consume.iteratingK(k + 1, s2, s3, s4, index);
-      index = consume.iteratingL(lFrom + 1, lEnd - 1, s2, s3, s4, index);
-      k = 0;
-      j = 0;
-      i = 0;
+    if (fL < lL) {
+      index = consume.iteratingI(bI, s4, index);
+      index = consume.iteratingJ(bJ, s3, s4, index);
+      index = consume.iteratingK(bK, s2, s3, s4, index);
+      index = consume.iteratingL(fL, lL - 1, s2, s3, s4, index);
+      bK = 0;
+      bJ = 0;
+      bI = 0;
     }
 
-    if (k < kEnd) {
-      index = consume.iteratingI(i, s4, index);
-      index = consume.iteratingJ(j + 1, s3, s4, index);
-      index = consume.iteratingK(k + 1, kEnd - 1, s3, s4, index);
-      j = 0;
-      i = 0;
+    if (fK < lK) {
+      index = consume.iteratingI(bI, s4, index);
+      index = consume.iteratingJ(bJ, s3, s4, index);
+      index = consume.iteratingK(fK, lK - 1, s3, s4, index);
+      bJ = 0;
+      bI = 0;
     }
 
-    if (j < jEnd) {
-      index = consume.iteratingI(i, s4, index);
-      index = consume.iteratingJ(j + 1, jEnd - 1, s4, index);
-      i = 0;
+    if (fJ < lJ) {
+      index = consume.iteratingI(bI, s4, index);
+      index = consume.iteratingJ(fJ, lJ - 1, s4, index);
+      bI = 0;
     }
 
-    for (; i <= iEnd; i++, index++) {
+    for (; bI < lI; bI++, index++) {
       consume(index);
     }
   }

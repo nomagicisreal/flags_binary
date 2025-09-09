@@ -181,17 +181,17 @@ abstract class FieldAB extends FieldParent
   @override
   void _sub(
     void Function(int) consume,
-    (int, int) start,
-    (int, int)? limit,
+    (int, int) from,
+    (int, int)? last,
   ) {
-    assert(validateIndex(start));
-    assert(limit == null || (validateIndex(limit) && start < limit));
+    assert(validateIndex(from));
+    assert(last == null || (validateIndex(last) && from < last));
 
     final division = bDivision;
     final sizeDivision = bSizeDivision;
-    final aBegin = start.$1 * division;
-    final aEnd = (limit?.$1 ?? aLimit - 1) * division;
-    var d = start.$2 ~/ sizeDivision;
+    final aBegin = from.$1 * division;
+    final aEnd = (last?.$1 ?? aLimit - 1) * division;
+    var d = from.$2 ~/ sizeDivision;
     for (; d < sizeDivision; d++) {
       consume(aBegin + d);
     }
@@ -200,7 +200,7 @@ abstract class FieldAB extends FieldParent
         consume(a + d);
       }
     }
-    final dEnd = (limit?.$2 ?? size) ~/ sizeDivision;
+    final dEnd = (last?.$2 ?? size) ~/ sizeDivision;
     for (d = 0; d <= dEnd; d++) {
       consume(aEnd + d);
     }

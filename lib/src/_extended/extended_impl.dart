@@ -40,7 +40,7 @@ bool Function(int) _predicator_less(int a) =>
     (v) => v < a;
 
 bool Function(int) _predicator_additionLess(int a, int b) =>
-        (v) => a + v < b;
+    (v) => a + v < b;
 
 ///
 ///
@@ -124,8 +124,17 @@ extension _NullableExtension<T> on T? {
 }
 
 extension _NullableIterableExtension<T> on Iterable<T?> {
-  Iterable<T> get filterNotNull sync* {
+  Iterable<T> get forwardFilterNotNull sync* {
     for (var item in this) {
+      if (item != null) yield item;
+    }
+  }
+}
+
+extension _NullableListExtension<T> on List<T?> {
+  Iterable<T> get backwardFilterNotNull sync* {
+    for (var i = length - 1; i >= 0; i--) {
+      final item = this[i];
       if (item != null) yield item;
     }
   }
@@ -397,26 +406,26 @@ extension _Record3Int on (int, int, int) {
 // }
 
 extension _ConsumeIntAllExtension on void Function(int) {
-  int iteratingI(int from, int last, int arg) {
-    for (var i = from; i <= last; i++, arg++) {
+  int iteratingI(int from, int limit, int arg) {
+    for (var i = from; i < limit; i++, arg++) {
       this(arg);
     }
     return arg;
   }
 
-  int iteratingJ(int from, int last, int lastI, int arg) {
-    for (var j = from; j <= last; j++) {
-      for (var i = 1; i <= lastI; i++, arg++) {
+  int iteratingJ(int from, int limit, int limitI, int arg) {
+    for (var j = from; j < limit; j++) {
+      for (var i = 0; i < limitI; i++, arg++) {
         this(arg);
       }
     }
     return arg;
   }
 
-  int iteratingK(int from, int limit, int limitJ, int limitI, int arg) {
-    for (var k = from; k <= limit; k++) {
-      for (var j = 1; j <= limitJ; j++) {
-        for (var i = 1; i <= limitI; i++, arg++) {
+  int iteratingK(int from, int limit, int lJ, int lI, int arg) {
+    for (var k = from; k < limit; k++) {
+      for (var j = 0; j < lJ; j++) {
+        for (var i = 0; i < lI; i++, arg++) {
           this(arg);
         }
       }
@@ -424,18 +433,11 @@ extension _ConsumeIntAllExtension on void Function(int) {
     return arg;
   }
 
-  int iteratingL(
-    int from,
-    int limit,
-    int limitK,
-    int limitJ,
-    int limitI,
-    int arg,
-  ) {
+  int iteratingL(int from, int limit, int lK, int lJ, int lI, int arg) {
     for (var l = from; l < limit; l++) {
-      for (var k = 0; k < limitK; k++) {
-        for (var j = 0; j < limitJ; j++) {
-          for (var i = 0; i < limitI; i++, arg++) {
+      for (var k = 0; k < lK; k++) {
+        for (var j = 0; j < lJ; j++) {
+          for (var i = 0; i < lI; i++, arg++) {
             this(arg);
           }
         }
