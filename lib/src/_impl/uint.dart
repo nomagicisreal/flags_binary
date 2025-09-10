@@ -3,7 +3,7 @@ part of '../../flags_binary.dart';
 ///
 ///
 ///
-/// [TypedIntList]
+/// [TypedDateListInt]
 ///
 ///
 ///
@@ -21,7 +21,7 @@ part of '../../flags_binary.dart';
 /// return iterable integer       : [bitsForward], ...
 /// return iterable provided type : [mapPAvailable], ...
 ///
-extension TypedIntList on TypedDataList<int> {
+extension TypedDateListInt on TypedDataList<int> {
   // static const int limit32 = 33;
   // static const int limit64 = 65;
   static const int countsAByte = 8;
@@ -332,7 +332,7 @@ extension TypedIntList on TypedDataList<int> {
   /// [bitsBackwardMapOf], [bitsBackwardMapOfFrom], [bitsBackwardMapOfTo], [bitsBackwardMapOfBetween]
   ///
   /// (algorithm is same as [bitsForwardOfFrom], [bitsForwardOfBetween], [bitsBackwardOf])
-  /// [datesForwardOf], [datesForwardOfBetween], [datesBackwardOf]
+  /// [datesForwardOf], [datesForwardOfBetween], [datesBackwardOfBetween]
   ///
   /// (algorithm is same as [bFirst], ...)
   /// [bitsForward], [bitsForwardFrom], [bitsForwardTo], [bitsForwardBetween], [bitsForwardAfter]
@@ -530,8 +530,8 @@ extension TypedIntList on TypedDataList<int> {
     int dFrom = 1,
   ]) sync* {
     assert(this is Uint32List && this[j] >> _monthDaysOf(y, m) == 0);
-    assert(_isValidMonth(m) && _isValidDay(y, m, dFrom));
-    assert(j >= 0 && j < length);
+    assert(_isValidDay(y, m, dFrom) && j >= 0 && j < length);
+
     for (
       var bits = this[j] >> dFrom - 1, d = dFrom;
       bits > 0;
@@ -545,15 +545,18 @@ extension TypedIntList on TypedDataList<int> {
     int j,
     int y,
     int m,
-    int dLast, [
+    int dTo, [
     int dFrom = 1,
   ]) sync* {
-    assert(this is Uint32List && this[j] >> _monthDaysOf(y, m) == 0);
-    assert(_isValidMonth(m) && _isValidDay(y, m, dFrom));
-    assert(j >= 0 && j < length);
+    assert(() {
+      if (this is Uint32List && this[j] >> _monthDaysOf(y, m) > 0) return false;
+      if (_isInvalidDay(y, m, dFrom) || _isInvalidDay(y, m, dTo)) return false;
+      return dFrom <= dTo && j >= 0 && j < length;
+    }());
+
     var bits = this[j] >> dFrom - 1, d = dFrom;
     for (
-      final last = math.min(dLast, bits.bitLength);
+      final last = math.min(dTo, bits.bitLength);
       d <= last;
       bits >>= 1, d++
     ) {
@@ -565,20 +568,38 @@ extension TypedIntList on TypedDataList<int> {
     int j,
     int y,
     int m, [
-    int? dFrom,
-    int dTo = 1,
+    int bTo = 0,
   ]) sync* {
     assert(this is Uint32List && this[j] >> _monthDaysOf(y, m) == 0);
-    assert(_isValidMonth(m) && _isValidDay(y, m, dTo));
-    assert(j >= 0 && j < length);
+    assert(_isValidDay(y, m, bTo + 1) && j >= 0 && j < length);
+
+    for (var bits = this[j], b = bits.bitLength - 1; b >= bTo; b--) {
+      final mask = 1 << b;
+      if (bits & mask == mask) yield (y, m, b + 1);
+    }
+  }
+
+  Iterable<(int, int, int)> datesBackwardOfBetween(
+    int j,
+    int y,
+    int m,
+    int bFrom, [
+    int bTo = 0,
+  ]) sync* {
+    assert(() {
+      if (this is Uint32List && this[j] >> _monthDaysOf(y, m) > 0) return false;
+      if (_isInvalidDay(y, m, bFrom + 1)) return false;
+      if (_isInvalidDay(y, m, bTo + 1)) return false;
+      return bFrom >= bTo && j >= 0 && j < length;
+    }());
+
     for (
-      var bits = this[j],
-          d = math.min(dFrom ?? _monthDaysOf(y, m), bits.bitLength - 1);
-      d >= dTo;
-      d--
+      var bits = this[j], b = math.min(bFrom, bits.bitLength - 1);
+      b >= bTo;
+      b--
     ) {
-      final mask = 1 << d;
-      if (bits & mask == mask) yield (y, m, d);
+      final mask = 1 << b;
+      if (bits & mask == mask) yield (y, m, b + 1);
     }
   }
 

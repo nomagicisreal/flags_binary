@@ -1,4 +1,4 @@
-part of '../flags_binary.dart';
+part of '../../flags_binary.dart';
 
 ///
 /// [_MSetFieldMonthsDatesScoped]
@@ -363,7 +363,7 @@ mixin _MSetFieldMonthsDatesScoped
   ]) sync* {
     assert(() {
       if (from == null || to == null) return true;
-      return _isValidDate(from) && _isValidDate(to) && from < to;
+      return _isValidDate(from) && _isValidDate(to) && from <= to;
     }(), 'invalid scope: ($from, $to)');
 
     final isFromFirst = from == null, isToLast = to == null;
@@ -471,12 +471,12 @@ mixin _MSetFieldMonthsDatesScoped
         indexOf = begin.monthsToYearMonth;
 
     // ensure from
-    final int dFrom;
+    final int bFrom;
     int y, m, j;
     if (isFromLast) {
       y = yEnd;
       m = mEnd;
-      dFrom = _monthDaysOf(yEnd, mEnd);
+      bFrom = _monthDaysOf(yEnd, mEnd) - 1;
       j = field.length - 1;
     } else {
       y = from.$1;
@@ -484,38 +484,38 @@ mixin _MSetFieldMonthsDatesScoped
       final mFrom = from.$2;
       if (y == yBegin && mFrom < mBegin) return;
       m = y == yEnd ? math.min(mEnd, mFrom) : mFrom;
-      dFrom = from.$3;
+      bFrom = from.$3 - 1;
       j = indexOf(y, m);
     }
 
     // ensure to
-    final int yTo, mTo, dTo;
+    final int yTo, mTo, bTo;
     if (isToFirst) {
       yTo = yBegin;
       mTo = mBegin;
-      dTo = 1;
+      bTo = 0;
     } else {
       yTo = to.$1;
       if (yTo > yEnd) return;
       final toM = to.$2;
       if (y == yEnd && toM > mEnd) return;
       mTo = y == yBegin ? math.max(mBegin, toM) : toM;
-      dTo = to.$3;
+      bTo = to.$3 - 1;
     }
 
-    final datesOf = field.datesBackwardOf;
+    final datesOfBetween = field.datesBackwardOfBetween;
 
     // inside a month
     if (y == yTo && m == mTo) {
-      yield* datesOf(j, y, m, dFrom, dTo);
+      yield* datesOfBetween(j, y, m, bFrom, bTo);
       return;
     }
 
     // last month -> intermediate month -> first month
     const january = DateTime.january, december = DateTime.december;
-    final jLast = indexOf(yTo, mTo);
+    final jLast = indexOf(yTo, mTo), datesOf = field.datesBackwardOf;
     assert(j > jLast);
-    yield* datesOf(j, y, m, dFrom);
+    yield* datesOfBetween(j, y, m, bFrom);
     while (true) {
       j--;
       m--;
@@ -526,23 +526,101 @@ mixin _MSetFieldMonthsDatesScoped
       if (j == jLast) break;
       yield* datesOf(j, y, m);
     }
-    yield* datesOf(j, y, m, dTo);
+    yield* datesOf(j, y, m, bTo);
   }
 }
 
-mixin _MSetBitsFieldMonthsDates on _MBitsFieldMonthsDates
+mixin _MSetBitsFieldMonthsDates
+    on _MFlagsContainerScopedDate<bool>, _MBitsFieldMonthsDates
     implements _AFieldSet<(int, int, int), (int, int, int)> {
   @override
-  void includesSub((int, int, int) from, [(int, int, int)? last]) =>
-      _sub(_bSet, from, last);
+  void includesSub((int, int, int) from, [(int, int, int)? to]) =>
+      _sub(_MBitsFieldMonthsDates._bSet, from, to);
 
   @override
-  void excludesSub((int, int, int) from, [(int, int, int)? last]) =>
-      _sub(_bClear, from, last);
+  void excludesSub((int, int, int) from, [(int, int, int)? to]) =>
+      _sub(_MBitsFieldMonthsDates._bClear, from, to);
 
   void _sub(
-    void Function(int, int, int) consume,
-    (int, int, int) begin,
-    (int, int, int)? limit,
-  );
+    void Function(TypedDataList<int>, int, int) consume,
+    (int, int, int) from,
+    (int, int, int)? to,
+  ) {
+    assert(validateIndex(from));
+    assert(to == null || (validateIndex(to) && from <= to));
+
+    final yFrom = from.$1, yTo = to?.$1 ?? end.$1;
+    assert(yFrom <= yTo);
+
+    final mFrom = from.$2,
+        dFrom = from.$3,
+        mTo = to?.$2 ?? end.$2,
+        dTo = to?.$3 ?? _monthDaysOf(yTo, mTo),
+        field = _field,
+        jFrom = begin.monthsToYearMonth(yFrom, mFrom);
+    ;
+
+    // ==
+    if (yFrom == yTo) {
+      assert(mFrom <= mTo);
+
+      // ==
+      if (mFrom == mTo) {
+        assert(dFrom <= dTo);
+        for (var i = dFrom - 1; i < dTo; i++) {
+          consume(field, jFrom, i);
+        }
+        return;
+      }
+
+      // <
+      final daysOf = _monthDaysOf, dLast = daysOf(yFrom, mFrom);
+      for (var i = dFrom - 1; i < dLast; i++) {
+        consume(field, jFrom, i);
+      }
+      var j = jFrom + 1;
+      for (var m = mFrom + 1; m < mTo; m++, j++) {
+        final dLast = daysOf(yFrom, m);
+        for (var i = 0; i < dLast; i++) {
+          consume(field, j, i);
+        }
+      }
+      for (var i = 0; i < dTo; i++) {
+        consume(field, j, i);
+      }
+      return;
+    }
+
+    // <
+    const january = DateTime.january, december = DateTime.december;
+    final daysOf = _monthDaysOf, dLastFrom = daysOf(yFrom, mFrom);
+    for (var i = dFrom - 1; i < dLastFrom; i++) {
+      consume(field, jFrom, i);
+    }
+    var j = jFrom + 1;
+    for (var m = mFrom + 1; m <= december; m++, j++) {
+      final dLast = daysOf(yFrom, m);
+      for (var i = 0; i < dLast; i++) {
+        consume(field, j, i);
+      }
+    }
+    for (var k = yFrom + 1; k < yTo; k++) {
+      for (var m = january; m <= december; m++, j++) {
+        final dLast = daysOf(k, m);
+        for (var i = 0; i < dLast; i++) {
+          consume(field, j, i);
+        }
+      }
+    }
+    for (var m = january; m < mTo; m++, j++) {
+      final dLast = daysOf(yTo, m);
+      for (var i = 0; i < dLast; i++) {
+        consume(field, j, i);
+      }
+    }
+    final dLastTo = daysOf(yTo, mTo);
+    for (var i = 0; i < dLastTo; i++) {
+      consume(field, j, i);
+    }
+  }
 }

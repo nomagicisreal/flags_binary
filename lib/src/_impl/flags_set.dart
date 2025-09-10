@@ -1,4 +1,4 @@
-part of '../flags_binary.dart';
+part of '../../flags_binary.dart';
 
 ///
 ///
@@ -203,11 +203,10 @@ mixin _MSetSlot<I, T>
 
   @override
   T? firstAfter(I index) {
-    final slot = _slot, length = slot.length;
-    var p = _bOf(index);
-    if (p > length - 2) return null;
-    for (p = p < 0 ? 0 : p + 1; p < length; p++) {
-      final s = slot[p];
+    final slot = _slot, length = slot.length, b = _bOf(index);
+    if (b >= length - 1) return null;
+    for (var i = math.max(0, b + 1); i < length; i++) {
+      final s = slot[i];
       if (s != null) return s;
     }
     return null;
@@ -225,12 +224,10 @@ mixin _MSetSlot<I, T>
 
   @override
   T? lastBefore(I index) {
-    final slot = _slot, last = slot.length - 1;
-    var p = _bOf(index);
-    if (p < 2) return null;
-    if (p > last) return slot[last];
-    for (p = p > last ? last : p - 1; p >= 0; p--) {
-      final s = slot[p];
+    final slot = _slot, last = slot.length - 1, b = _bOf(index);
+    if (b <= 1) return null;
+    for (var i = math.min(last, b - 1); i >= 0; i--) {
+      final s = slot[i];
       if (s != null) return s;
     }
     return null;
@@ -244,44 +241,57 @@ mixin _MSetSlot<I, T>
 
   @override
   Iterable<T> availablesRecent([I? from, I? to]) sync* {
-    final slot = _slot, length = slot.length, last = length - 1;
-    var b = from == null ? 0 : _bOf(from);
-    if (b > last) return;
+    assert(from == null || to == null || _bOf(from) <= _bOf(to));
 
-    final int pLast;
+    final slot = _slot, last = slot.length - 1;
+    final int iTo;
     if (to == null) {
-      pLast = last;
+      iTo = last;
     } else {
-      final pTo = _bOf(to);
-      assert(b <= pTo, 'invalid index($from, $to) -> position($b, $pTo)');
-      if (pTo < 0) return;
-      pLast = math.min(pTo, last);
+      final bLast = _bOf(to);
+      if (bLast < 0) return;
+      iTo = math.min(bLast, last);
     }
-    if (b < 0) b = 0;
-    for (; b <= pLast; b++) {
-      final s = slot[b];
+    int i;
+    if (from == null) {
+      i = 0;
+    } else {
+      final bFrom = _bOf(from);
+      if (bFrom > last) return;
+      i = math.max(0, bFrom);
+    }
+
+    for (; i <= iTo; i++) {
+      final s = slot[i];
       if (s != null) yield s;
     }
   }
 
   @override
   Iterable<T> availablesLatest([I? from, I? to]) sync* {
-    final slot = _slot, length = slot.length, last = length - 1;
-    var b = from == null ? last : _bOf(from);
-    if (b < 0) return;
+    assert(from == null || to == null || _bOf(from) >= _bOf(to));
 
-    final int pLast;
+    final slot = _slot, last = slot.length - 1;
+    final int iTo;
     if (to == null) {
-      pLast = 0;
+      iTo = 0;
     } else {
-      final pTo = _bOf(to);
-      assert(b >= pTo, 'invalid index($from, $to) -> position($b, $pTo)');
-      if (pTo > last) return;
-      pLast = math.max(pTo, 0);
+      final bTo = _bOf(to);
+      if (bTo > last) return;
+      iTo = math.max(0, bTo);
     }
-    if (b > last) b = last;
-    for (; b >= pLast; b--) {
-      final s = slot[b];
+
+    var i = from == null ? last : _bOf(from);
+    if (from == null) {
+      i = 0;
+    } else {
+      final bFrom = _bOf(from);
+      if (bFrom < 0) return;
+      i = math.min(last, bFrom);
+    }
+
+    for (; i >= iTo; i--) {
+      final s = slot[i];
       if (s != null) yield s;
     }
   }
@@ -291,15 +301,15 @@ mixin _MSetSlot<I, T>
   ///
   @override
   Iterable<T> filterOn(FieldParent field) sync* {
-    final slot = _slot;
-    final length = slot.length;
-    final f = field._field;
-    final sizeEach = field._sizeEach;
-    final count = f.length;
+    final slot = _slot,
+        length = slot.length,
+        filter = field._field,
+        sizeEach = field._sizeEach,
+        count = filter.length;
     assert(length == sizeEach * count);
     for (var j = 0; j < count; j++) {
       final start = j * sizeEach;
-      for (var i = 0, bits = f[j]; i < sizeEach; i++, bits >>= 1) {
+      for (var i = 0, bits = filter[j]; i < sizeEach; i++, bits >>= 1) {
         if (bits & 1 == 1) {
           final value = slot[start + i];
           if (value != null) yield value;
@@ -320,7 +330,7 @@ mixin _MSetSlot<I, T>
   @override
   void includesFrom(Iterable<T> iterable, I begin, [bool inclusive = true]) {
     final slot = _slot;
-    var i = inclusive ? _bOf(begin) : _bOf(begin) + 1;
+    var i = inclusive ? _bOf(begin): _bOf(begin) + 1;
     assert(i >= 0 && i < slot.length);
     for (var it in iterable) {
       slot[i] = it;
@@ -329,11 +339,10 @@ mixin _MSetSlot<I, T>
   }
 
   @override
-  void includesTo(Iterable<T> iterable, I limit, [bool inclusive = true]) {
-    final slot = _slot;
-    var last = inclusive ? _bOf(limit) + 1 : _bOf(limit);
-    assert(last < slot.length);
-    var i = last - iterable.length;
+  void includesTo(Iterable<T> iterable, I last, [bool inclusive = true]) {
+    final slot = _slot, bLast = inclusive ? _bOf(last) : _bOf(last) - 1;
+    assert(bLast < slot.length);
+    var i = bLast - iterable.length + 1;
     assert(i >= 0);
     for (var it in iterable) {
       slot[i] = it;
@@ -347,12 +356,12 @@ mixin _MSetSlot<I, T>
 ///
 mixin _MSetBitsField<T> on _MBitsField implements _AFieldSet<T, T> {
   @override
-  void includesSub(T from, [T? last]) => _sub(_bSet, from, last);
+  void includesSub(T from, [T? to]) => _sub(_bSet, from, to);
 
   @override
-  void excludesSub(T from, [T? last]) => _sub(_bClear, from, last);
+  void excludesSub(T from, [T? to]) => _sub(_bClear, from, to);
 
-  void _sub(void Function(int) consume, T from, T? last);
+  void _sub(void Function(int) consume, T from, T? to);
 }
 
 ///
@@ -361,9 +370,11 @@ mixin _MSetBitsField<T> on _MBitsField implements _AFieldSet<T, T> {
 mixin _MSetBitsFieldSpatial1
     implements _MFlagsContainerSpatial1<bool>, _MSetBitsField<int> {
   @override
-  void _sub(void Function(int) consume, int from, int? last) {
-    assert(validateIndex(from) && (last == null || (validateIndex(last))));
-    final bLimit = last ?? spatial1;
+  void _sub(void Function(int) consume, int from, int? to) {
+    assert(validateIndex(from));
+    assert(to == null || validateIndex(to) && from <= to);
+
+    final bLimit = to ?? spatial1;
     for (var b = from - 1; b < bLimit; b++) {
       consume(b);
     }
@@ -373,13 +384,15 @@ mixin _MSetBitsFieldSpatial1
 mixin _MSetBitsFieldSpatial2
     implements _MFlagsContainerSpatial2<bool>, _MSetBitsField<(int, int)> {
   @override
-  void _sub(void Function(int) consume, (int, int) from, (int, int)? last) {
-    assert(validateIndex(from) && (last == null || validateIndex(last)));
+  void _sub(void Function(int) consume, (int, int) from, (int, int)? to) {
+    assert(validateIndex(from));
+    assert(to == null || validateIndex(to) && from <= to);
+
     final spatial2 = this.spatial2,
         fJ = from.$1,
         fI = from.$2,
-        lJ = last?.$1 ?? spatial1,
-        lI = last?.$2 ?? spatial2;
+        lJ = to?.$1 ?? spatial1,
+        lI = to?.$2 ?? spatial2;
     var bI = fI - 1, index = (fJ - 1) * spatial2 + bI;
 
     if (fJ < lJ) {
@@ -400,17 +413,19 @@ mixin _MSetBitsFieldSpatial3
   void _sub(
     void Function(int) consume,
     (int, int, int) from,
-    (int, int, int)? last,
+    (int, int, int)? to,
   ) {
-    assert(validateIndex(from) && (last == null || validateIndex(last)));
+    assert(validateIndex(from));
+    assert(to == null || validateIndex(to) && from <= to);
+
     final spatial2 = this.spatial2,
         spatial3 = this.spatial3,
         fK = from.$1,
         fJ = from.$2,
         fI = from.$3,
-        lK = last?.$1 ?? spatial1,
-        lJ = last?.$2 ?? spatial2,
-        lI = last?.$3 ?? spatial3;
+        lK = to?.$1 ?? spatial1,
+        lJ = to?.$2 ?? spatial2,
+        lI = to?.$3 ?? spatial3;
     var bJ = fJ - 1,
         bI = fI - 1,
         index = ((fK - 1) * spatial2 + bJ) * spatial3 + bI;
@@ -443,9 +458,11 @@ mixin _MSetBitsFieldSpatial4
   void _sub(
     void Function(int) consume,
     (int, int, int, int) from,
-    (int, int, int, int)? last,
+    (int, int, int, int)? to,
   ) {
-    assert(validateIndex(from) && (last == null || validateIndex(last)));
+    assert(validateIndex(from));
+    assert(to == null || validateIndex(to) && from <= to);
+
     final s2 = spatial2,
         s3 = spatial3,
         s4 = spatial4,
@@ -453,10 +470,10 @@ mixin _MSetBitsFieldSpatial4
         fK = from.$2,
         fJ = from.$3,
         fI = from.$4,
-        lL = last?.$1 ?? spatial1,
-        lK = last?.$2 ?? spatial2,
-        lJ = last?.$3 ?? spatial3,
-        lI = last?.$4 ?? spatial4;
+        lL = to?.$1 ?? spatial1,
+        lK = to?.$2 ?? spatial2,
+        lJ = to?.$3 ?? spatial3,
+        lI = to?.$4 ?? spatial4;
     var bK = fK - 1,
         bJ = fJ - 1,
         bI = fI - 1,

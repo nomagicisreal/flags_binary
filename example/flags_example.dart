@@ -5,6 +5,7 @@ void main() {
   // final field = Field(99);
   // field.includesSub(20, 60);
   // print(field.availablesRecent(26));
+  // print(field.availablesLatest(26));
 
   // final field = Field2D(10, 22);
   // field.includesOn(5, [1, 2, 7, 9, 18]);
@@ -24,17 +25,23 @@ void main() {
 
   // final field = FieldDatesInMonths((2025, 7), (2025, 12));
   // field.includesSub((2025, 8, 10), (2025, 9, 20));
-  // print(field.availablesFrom((2025, 9, 18), false));
-  // print(field.availablesTo((2025, 8, 12), false));
-  // print(field.availablesSub((2025, 8, 20), (2025, 8, 24), false, false));
+  // print(field.availablesRecent((2025, 9, 18)));
+  // print(field.availablesLatest((2025, 8, 12)));
+  // print(field.toString());
 
-  // final slot = Slot4D<String>(5, 3, 4, 2);
-  // slot.includesFrom(['he', 'she', 'it'], (0, 1, 1, 1), false);
-  // final slot = Slot3D<String>(5, 3, 4);
-  // slot.includesFrom(['he', 'she', 'it'], (1, 1, 1), false);
-  // final slot = Slot2D<String>(5, 3);
-  // slot.includesFrom(['he', 'she', 'it'], (1, 1), false);
   // final slot = Slot<String>(29);
   // slot.includesFrom(['he', 'she', 'it'], 5, false);
+  // print(slot.toString());
+
+  // final slot = Slot2D<String>(5, 3);
+  // slot.includesTo(['he', 'she', 'it'], (2, 3));
+  // print(slot.toString());
+
+  // final slot = Slot3D<String>(5, 3, 4);
+  // slot.includesFrom(['he', 'she', 'it'], (2, 1, 2), true);
+  // print(slot.toString());
+
+  // final slot = Slot4D<String>(5, 3, 4, 2);
+  // slot.includesFrom(['he', 'she', 'it'], (5, 2, 2, 1), false);
   // print(slot.toString());
 }

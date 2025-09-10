@@ -1,4 +1,4 @@
-part of '../../flags_binary.dart';
+part of '../flags_binary.dart';
 
 ///
 ///
@@ -9,6 +9,8 @@ part of '../../flags_binary.dart';
 /// [Slot2D]
 /// [Slot3D]
 /// [Slot4D]
+///
+/// [SlotDatesInMonths]
 ///
 ///
 ///
@@ -29,17 +31,17 @@ class Slot<T> extends SlotParent<T>
   @override
   T? operator [](int index) {
     assert(validateIndex(index));
-    return _slot[index];
+    return _slot[index - 1];
   }
 
   @override
   void operator []=(int index, T? value) {
     assert(validateIndex(index));
-    _slot[index] = value;
+    _slot[index - 1] = value;
   }
 
   @override
-  int _bOf(int index) => index;
+  int _bOf(int index) => index - 1;
 }
 
 class Slot2D<T> extends SlotParent<T>
@@ -98,4 +100,25 @@ class Slot4D<T> extends SlotParent<T>
 
   Slot4D.from(Field4D field)
     : this(field.spatial1, field.spatial2, field.spatial3, field.spatial4);
+}
+
+
+///
+///
+///
+class SlotDatesInMonths<T> extends SlotParent<T>
+    with
+        _MFlagsContainerScopedDate<T?>,
+        _MFlagsScopedDatePositionDay,
+        _MSlotContainerPositionAble<(int, int, int), T>,
+        _MSetSlot<(int, int, int), T>,
+        _MEquatableSlot<T, SlotDatesInMonths<T>> {
+  @override
+  final (int, int) begin;
+  @override
+  final (int, int) end;
+
+  SlotDatesInMonths(this.begin, this.end)
+      : assert(_isValidYearMonthScope(begin, end), 'invalid date $begin ~ $end'),
+        super(begin.daysToDate(end.$1, end.$2));
 }

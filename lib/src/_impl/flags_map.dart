@@ -1,4 +1,4 @@
-part of '../flags_binary.dart';
+part of '../../flags_binary.dart';
 
 ///
 ///

@@ -12,13 +12,12 @@ part of '../../flags_binary.dart';
 /// [_IntExtension]
 /// [_NullableExtension]
 /// [_StringBufferExtension]
-/// [_Record2Int]
-/// [_Record3Int]
+/// [_Record2Int], [_Record3Int], [_Record4Int]
 ///
 ///
 ///
-const int _hoursADay = 24;
-const int _minuteADay = 60;
+// const int _hoursADay = 24;
+// const int _minuteADay = 60;
 const Map<int, int> _monthsDaysWithoutFeb = {
   1: 31,
   3: 31,
@@ -69,8 +68,8 @@ bool _isValidMonth(int month) =>
 bool _isValidDay(int year, int month, int day) =>
     day >= 1 && day <= _monthDaysOf(year, month);
 
-// bool _isInvalidDay(int year, int month, int day) =>
-//     day < 1 || day > _monthDaysOf(year, month);
+bool _isInvalidDay(int year, int month, int day) =>
+    day < 1 || day > _monthDaysOf(year, month);
 
 bool _isValidDate((int, int, int) date) {
   final month = date.$2;
@@ -87,11 +86,14 @@ bool _isValidDate((int, int, int) date) {
 ///
 ///
 ///
-int _monthDaysOf(int year, int month) => month == 2
-    ? _isYearLeapYear(year)
-          ? 29
-          : 28
-    : _monthsDaysWithoutFeb[month]!;
+int _monthDaysOf(int year, int month) {
+  assert(_isValidMonth(month));
+  return month == 2
+      ? _isYearLeapYear(year)
+            ? 29
+            : 28
+      : _monthsDaysWithoutFeb[month]!;
+}
 
 int yearDaysOf(int year) => _isYearLeapYear(year) ? 366 : 365;
 
@@ -244,6 +246,14 @@ extension _Record2Int on (int, int) {
     reduceFinal: _reduce_isLess,
   );
 
+  bool operator <=((int, int) other) => _comparing(
+    other.$1,
+    other.$2,
+    reduceInvalid: _reduce_isLarger,
+    reduce: _reduce_isLess,
+    reduceFinal: _reduce_isLessOrEqual,
+  );
+
   bool largerOrEqualThan3((int, int, int) other) => _comparing(
     other.$1,
     other.$2,
@@ -267,7 +277,9 @@ extension _Record2Int on (int, int) {
   ///
   int monthsToYearMonth(int year, int month) {
     assert(_isValidMonth(month) && _isValidMonth(this.$2));
-    return month - this.$2 + (year - this.$1) * 12;
+    final y = this.$1;
+    if (year == y) return month - this.$2;
+    return month - this.$2 + (year - y) * DateTime.december;
   }
 
   int daysToDate(int year, int month, [int? day]) {
@@ -340,12 +352,12 @@ extension _Record3Int on (int, int, int) {
     reduceFinal: _reduce_isLess,
   );
 
-  // bool operator <=((int, int, int) other) => _comparing(
-  //   other,
-  //   reduceInvalid: _reduce_isLarger,
-  //   reduce: _reduce_isLess,
-  //   reduceFinal: _reduce_isLessOrEqual,
-  // );
+  bool operator <=((int, int, int) other) => _comparing(
+    other,
+    reduceInvalid: _reduce_isLarger,
+    reduce: _reduce_isLess,
+    reduceFinal: _reduce_isLessOrEqual,
+  );
 
   // ///
   // /// [daysToDates]
@@ -392,6 +404,45 @@ extension _Record3Int on (int, int, int) {
   //   }
   //   return days + day - dayCurrent;
   // }
+}
+
+extension _Record4Int on (int, int, int, int) {
+  bool _comparing(
+    (int, int, int, int) other, {
+    required bool Function(int, int) reduceInvalid,
+    required bool Function(int, int) reduce,
+    required bool Function(int, int) reduceFinal,
+  }) {
+    final one = this.$1;
+    final oneAnother = other.$1;
+    if (reduceInvalid(one, oneAnother)) return false;
+    if (reduce(one, oneAnother)) return true;
+    final two = this.$2;
+    final twoAnother = other.$2;
+    if (reduceInvalid(two, twoAnother)) return false;
+    if (reduce(two, twoAnother)) return true;
+    final three = this.$3;
+    final threeAnother = other.$3;
+    if (reduceInvalid(three, threeAnother)) return false;
+    final four = this.$4;
+    final fourAnother = other.$4;
+    if (reduceInvalid(four, fourAnother)) return false;
+    return reduceFinal(four, fourAnother);
+  }
+
+  // bool operator <((int, int, int, int) other) => _comparing(
+  //   other,
+  //   reduceInvalid: _reduce_isLarger,
+  //   reduce: _reduce_isLess,
+  //   reduceFinal: _reduce_isLess,
+  // );
+
+  bool operator <=((int, int, int, int) other) => _comparing(
+    other,
+    reduceInvalid: _reduce_isLarger,
+    reduce: _reduce_isLess,
+    reduceFinal: _reduce_isLessOrEqual,
+  );
 }
 
 // extension _IterableExtension<I> on Iterable<I> {

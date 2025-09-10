@@ -1,4 +1,4 @@
-part of '../flags_binary.dart';
+part of '../../flags_binary.dart';
 
 ///
 ///
@@ -26,7 +26,7 @@ part of '../flags_binary.dart';
 /// [_Field2D8], ...
 /// [_Field3D8], ...
 /// [_Field4D8], ...
-/// [_FieldAB8], ...
+/// [_FieldAB8], ... (in dev)
 ///
 ///
 ///
@@ -37,46 +37,46 @@ part of '../flags_binary.dart';
 ///
 mixin _MFlagsO8 implements _AFieldBits, _AFieldIdentical {
   @override
-  int get _shift => TypedIntList.shift8;
+  int get _shift => TypedDateListInt.shift8;
 
   @override
-  int get _mask => TypedIntList.mask8;
+  int get _mask => TypedDateListInt.mask8;
 
   @override
-  int get _sizeEach => TypedIntList.sizeEach8;
+  int get _sizeEach => TypedDateListInt.sizeEach8;
 }
 
 mixin _MFlagsO16 implements _AFieldBits, _AFieldIdentical {
   @override
-  int get _shift => TypedIntList.shift16;
+  int get _shift => TypedDateListInt.shift16;
 
   @override
-  int get _mask => TypedIntList.mask16;
+  int get _mask => TypedDateListInt.mask16;
 
   @override
-  int get _sizeEach => TypedIntList.sizeEach16;
+  int get _sizeEach => TypedDateListInt.sizeEach16;
 }
 
 mixin _MFlagsO32 implements _AFieldBits, _AFieldIdentical {
   @override
-  int get _shift => TypedIntList.shift32;
+  int get _shift => TypedDateListInt.shift32;
 
   @override
-  int get _mask => TypedIntList.mask32;
+  int get _mask => TypedDateListInt.mask32;
 
   @override
-  int get _sizeEach => TypedIntList.sizeEach32;
+  int get _sizeEach => TypedDateListInt.sizeEach32;
 }
 
 mixin _MFlagsO64 implements _AFieldBits, _AFieldIdentical {
   @override
-  int get _shift => TypedIntList.shift64;
+  int get _shift => TypedDateListInt.shift64;
 
   @override
-  int get _mask => TypedIntList.mask64;
+  int get _mask => TypedDateListInt.mask64;
 
   @override
-  int get _sizeEach => TypedIntList.sizeEach64;
+  int get _sizeEach => TypedDateListInt.sizeEach64;
 }
 
 ///
@@ -177,17 +177,17 @@ mixin _MBitsField implements _AField, _AFieldBits {
 
 mixin _MBitsFieldMonthsDates
     implements _AField, _AFieldIdentical, _AFlagsScoped<(int, int)> {
-  bool _bOn(int year, int month, int day) =>
-      _field[begin.monthsToYearMonth(year, month)] >> day - 1 & 1 == 1;
+  static bool _bOn(TypedDataList<int> field, int j, int i) =>
+      field[j] >> i & 1 == 1;
 
-  void _bSet(int year, int month, int day) =>
-      _field[begin.monthsToYearMonth(year, month)] |= 1 << day - 1;
+  static void _bSet(TypedDataList<int> field, int j, int i) =>
+      field[j] |= 1 << i;
 
-  void _bClear(int year, int month, int day) =>
-      _field[begin.monthsToYearMonth(year, month)] &= ~(1 << day - 1);
+  static void _bClear(TypedDataList<int> field, int j, int i) =>
+      field[j] &= ~(1 << i);
 
   @override
-  int get _sizeEach => TypedIntList.sizeEach32;
+  int get _sizeEach => TypedDateListInt.sizeEach32;
 }
 
 ///
@@ -213,15 +213,27 @@ mixin _MFieldContainerMonthsDates on _MFlagsContainerScopedDate<bool>
   @override
   bool operator []((int, int, int) index) {
     assert(validateIndex(index));
-    return _bOn(index.$1, index.$2, index.$3);
+    return _MBitsFieldMonthsDates._bOn(
+      _field,
+      begin.monthsToYearMonth(index.$1, index.$2),
+      index.$3,
+    );
   }
 
   @override
   void operator []=((int, int, int) index, bool value) {
     assert(validateIndex(index));
     value
-        ? _bSet(index.$1, index.$2, index.$3)
-        : _bClear(index.$1, index.$2, index.$3);
+        ? _MBitsFieldMonthsDates._bSet(
+            _field,
+            begin.monthsToYearMonth(index.$1, index.$2),
+            index.$3,
+          )
+        : _MBitsFieldMonthsDates._bClear(
+            _field,
+            begin.monthsToYearMonth(index.$1, index.$2),
+            index.$3,
+          );
   }
 }
 
@@ -624,56 +636,56 @@ class _Field4D64 extends Field4D with _MFlagsO64 {
       _Field4D64(spatial1, spatial2, spatial3, spatial4, _field.length);
 }
 
+// //
+// class _FieldAB8 extends FieldAB with _MFlagsO8 {
+//   _FieldAB8.dayPer12Minute() : super._(_validate_per12m, 5, Uint8List(9));
 //
-class _FieldAB8 extends FieldAB with _MFlagsO8 {
-  _FieldAB8.dayPer12Minute() : super._(_validate_per12m, 5, Uint8List(9));
-
-  _FieldAB8.dayPer20Minute() : super._(_validate_per20m, 3, Uint8List(9));
-
-  _FieldAB8.dayPerHour() : super._(_validate_perH, 1, Uint8List(3));
-
-  _FieldAB8._(super.bValidate, super.bDivision, super._field) : super._();
-
-  @override
-  FieldAB get newZero =>
-      _FieldAB8._(bValidate, bDivision, Uint8List(_field.length));
-
-  static bool _validate_perH(int minute) => minute == 0;
-
-  static bool _validate_per20m(int minute) =>
-      minute == 0 || minute == 20 || minute == 40;
-
-  static bool _validate_per12m(int minute) =>
-      minute == 0 ||
-      minute == 12 ||
-      minute == 24 ||
-      minute == 36 ||
-      minute == 48;
-}
-
-class _FieldAB16 extends FieldAB with _MFlagsO16 {
-  _FieldAB16.dayPer10Minute() : super._(_validate_per10m, 6, Uint16List(9));
-
-  _FieldAB16.dayPer15Minute() : super._(_validate_per15m, 4, Uint16List(9));
-
-  _FieldAB16.dayPer30Minute() : super._(_validate_per30m, 2, Uint16List(3));
-
-  _FieldAB16._(super.bValidate, super.bDivision, super._field) : super._();
-
-  @override
-  FieldAB get newZero =>
-      _FieldAB16._(bValidate, bDivision, Uint16List(_field.length));
-
-  static bool _validate_per30m(int minute) => minute == 0 || minute == 30;
-
-  static bool _validate_per15m(int minute) =>
-      minute == 0 || minute == 15 || minute == 30 || minute == 45;
-
-  static bool _validate_per10m(int minute) =>
-      minute == 0 ||
-      minute == 10 ||
-      minute == 20 ||
-      minute == 30 ||
-      minute == 40 ||
-      minute == 50;
-}
+//   _FieldAB8.dayPer20Minute() : super._(_validate_per20m, 3, Uint8List(9));
+//
+//   _FieldAB8.dayPerHour() : super._(_validate_perH, 1, Uint8List(3));
+//
+//   _FieldAB8._(super.bValidate, super.bDivision, super._field) : super._();
+//
+//   @override
+//   FieldAB get newZero =>
+//       _FieldAB8._(bValidate, bDivision, Uint8List(_field.length));
+//
+//   static bool _validate_perH(int minute) => minute == 0;
+//
+//   static bool _validate_per20m(int minute) =>
+//       minute == 0 || minute == 20 || minute == 40;
+//
+//   static bool _validate_per12m(int minute) =>
+//       minute == 0 ||
+//       minute == 12 ||
+//       minute == 24 ||
+//       minute == 36 ||
+//       minute == 48;
+// }
+//
+// class _FieldAB16 extends FieldAB with _MFlagsO16 {
+//   _FieldAB16.dayPer10Minute() : super._(_validate_per10m, 6, Uint16List(9));
+//
+//   _FieldAB16.dayPer15Minute() : super._(_validate_per15m, 4, Uint16List(9));
+//
+//   _FieldAB16.dayPer30Minute() : super._(_validate_per30m, 2, Uint16List(3));
+//
+//   _FieldAB16._(super.bValidate, super.bDivision, super._field) : super._();
+//
+//   @override
+//   FieldAB get newZero =>
+//       _FieldAB16._(bValidate, bDivision, Uint16List(_field.length));
+//
+//   static bool _validate_per30m(int minute) => minute == 0 || minute == 30;
+//
+//   static bool _validate_per15m(int minute) =>
+//       minute == 0 || minute == 15 || minute == 30 || minute == 45;
+//
+//   static bool _validate_per10m(int minute) =>
+//       minute == 0 ||
+//       minute == 10 ||
+//       minute == 20 ||
+//       minute == 30 ||
+//       minute == 40 ||
+//       minute == 50;
+// }

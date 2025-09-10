@@ -11,13 +11,8 @@ part of '../flags_binary.dart';
 ///   **[_AFlagsOperatable]
 ///   |
 ///   --[FieldParent], [SlotParent]
-///   |   --[Field]
-///   |   --[Field2D]
-///   |   --[Field3D]
-///   |   --[Field4D]
-///   |   --[_PFieldScoped]
-///   |   |   --[FieldDatesInMonths]
-///   |   |
+///   |   --[Field], [Field2D], [Field3D], [Field4D]
+///   |   --[FieldDatesInMonths]
 ///   |   --[FieldAB]
 ///   |
 ///   --[_PFieldMapSplay]
@@ -214,18 +209,18 @@ sealed class _PFlags {
                     instance.spatial4 +
                     (instance.spatial4 + 3 >> 2) +
                     2,
-              FieldAB() =>
-                3 +
-                    6 +
-                    2 +
-                    switch (instance.bDivision) {
-                          1 => 6,
-                          2 || 3 => 4,
-                          _ => 3,
-                        } *
-                        (instance.bDivision + 1) +
-                    2,
               FieldDatesInMonths() => 1 + 12 + 32 + 4 + 1,
+              // FieldAB() =>
+              //   3 +
+              //       6 +
+              //       2 +
+              //       switch (instance.bDivision) {
+              //             1 => 6,
+              //             2 || 3 => 4,
+              //             _ => 3,
+              //           } *
+              //           (instance.bDivision + 1) +
+              //       2,
               _ => throw UnimplementedError(),
             };
         buffer.writeRepeat(borderLength, '-');
@@ -374,39 +369,25 @@ sealed class _PFlags {
             }
             throw UnimplementedError();
           }(),
-          FieldAB() => () {
-            final shift = flags._shift,
-                mask = flags._mask,
-                division = flags.bDivision,
-                hoursPerLine = switch (division) {
-                  1 => 6,
-                  2 || 3 => 4,
-                  _ => 3,
-                },
-                size = hoursPerLine * division,
-                limit = (flags.aLimit - 1) ~/ hoursPerLine;
-            var i = 0;
-            for (var j = 0; j < limit; j++) {
-              final h = j * hoursPerLine;
-              buffer.write('|');
-              buffer.write('$h'.padLeft(3));
-              buffer.write(' ~');
-              buffer.write('${h + hoursPerLine - 1}'.padLeft(3));
-              buffer.write(' :');
-              for (var m = 0; m < size; m++) {
-                if (m % division == 0) buffer.write(' ');
-                buffer.writeBit(field[i >> shift] >> (i & mask));
-                i++;
-              }
-              buffer.writeln(' |');
-            }
-          }(),
           FieldDatesInMonths() => () {
+            buffer.write('|');
+            buffer.writeRepeat(12, ' ');
+            for (var d = 1; d < 32; d+=8) {
+              buffer.write('Day $d'.padRight(9));
+            }
+            buffer.writeln('|');
+
+            buffer.write('|');
+            buffer.writeRepeat(12, ' ');
+            for (var c = 0; c < 4; c++) {
+              buffer.write(' v'.padRight(9));
+            }
+            buffer.writeln('|');
+
             final december = DateTime.december,
                 begin = flags.begin,
                 limit = field.length;
             var year = begin.$1, month = begin.$2;
-
             for (var j = 0; j < limit; j++) {
               buffer.write('| (');
               buffer.write('$year'.padLeft(4));
@@ -422,6 +403,34 @@ sealed class _PFlags {
               }
             }
           }(),
+          // FieldAB() => () {
+          //   final shift = flags._shift,
+          //       mask = flags._mask,
+          //       division = flags.bDivision,
+          //       hoursPerLine = switch (division) {
+          //         1 => 6,
+          //         2 || 3 => 4,
+          //         _ => 3,
+          //       },
+          //       size = hoursPerLine * division,
+          //       limit = (flags.aLimit - 1) ~/ hoursPerLine;
+          //   var i = 0;
+          //   for (var j = 0; j < limit; j++) {
+          //     final h = j * hoursPerLine;
+          //     buffer.write('|');
+          //     buffer.write('$h'.padLeft(3));
+          //     buffer.write(' ~');
+          //     buffer.write('${h + hoursPerLine - 1}'.padLeft(3));
+          //     buffer.write(' :');
+          //     for (var m = 0; m < size; m++) {
+          //       if (m % division == 0) buffer.write(' ');
+          //       buffer.writeBit(field[i >> shift] >> (i & mask));
+          //       i++;
+          //     }
+          //     buffer.writeln(' |');
+          //   }
+          // }(),
+          // FieldWeekSchedule() => throw UnimplementedError(),
         };
         buffer.writeRepeat(borderLength, '-');
         buffer.writeln();

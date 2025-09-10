@@ -1,6 +1,6 @@
 name: flags_binary
 description: a package for handling bits (0, 1) binary state
-version: 0.0.2
+version: 0.0.3
 repository: https://github.com/nomagicisreal/flags_binary
 
 environment:

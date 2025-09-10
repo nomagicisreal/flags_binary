@@ -54,8 +54,8 @@ abstract class _AFlagsSpatial4 implements _AFlagsSpatial3 {
 /// All flags index should start from 1, because all the flags implementation required bits.
 /// it's impossible for flags implementation to have [int.bitLength] < 1.
 /// start from 1 prevents subtraction finding last index, [List.length] - 1.
-/// see also [TypedIntList.bLastOf], [TypedIntList.bitsBackwardOf], ...
-/// if started from 0, yielding iterable elements from the functions be like [TypedIntList.bitsBackwardOf] required '- 1'
+/// see also [TypedDateListInt.bLastOf], [TypedDateListInt.bitsBackwardOf], ...
+/// if started from 0, yielding iterable elements from the functions be like [TypedDateListInt.bitsBackwardOf] required '- 1'
 /// for each iterable element.
 ///
 abstract class _AFlagsBitsAble<I> implements _PFlags {
@@ -132,9 +132,9 @@ abstract class _AFieldBits implements _PFlags {
 }
 
 abstract class _AFieldSet<I, T> implements _AFlagsSet<I, T> {
-  void includesSub(T from, [T? last]);
+  void includesSub(T from, [T? to]);
 
-  void excludesSub(T from, [T? last]);
+  void excludesSub(T from, [T? to]);
 }
 
 //
@@ -170,7 +170,7 @@ abstract class _ASlotSet<I, T> implements _AFlagsSet<I, T> {
 
   void includesFrom(Iterable<T> iterable, I begin, [bool inclusive]);
 
-  void includesTo(Iterable<T> iterable, I limit, [bool inclusive]);
+  void includesTo(Iterable<T> iterable, I last, [bool inclusive]);
 }
 
 //
