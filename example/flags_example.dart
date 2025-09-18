@@ -2,10 +2,10 @@
 import 'package:flags_binary/flags_binary.dart';
 
 void main() {
-  // final field = Field(99);
-  // field.includesSub(20, 60);
-  // print(field.availablesRecent(26));
-  // print(field.availablesLatest(26));
+  final field = Field(99);
+  field.includesSub(20, 23);
+  print(field.availablesLatest(22));
+  print(field.toSlot<String>((value) => 's:$value'));
 
   // final field = Field2D(10, 22);
   // field.includesOn(5, [1, 2, 7, 9, 18]);
@@ -44,4 +44,6 @@ void main() {
   // final slot = Slot4D<String>(5, 3, 4, 2);
   // slot.includesFrom(['he', 'she', 'it'], (5, 2, 2, 1), false);
   // print(slot.toString());
+
+
 }

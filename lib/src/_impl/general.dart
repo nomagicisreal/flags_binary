@@ -112,7 +112,7 @@ bool _reduce_isLessOrEqual(int a, int b) => a <= b;
 ///
 ///
 extension _IntExtension on int {
-  bool isRangeOpenLower(num lower, num upper) => this > lower && this <= upper;
+  bool isRange(num lower, num upper) => this >= lower && this <= upper;
 }
 
 ///

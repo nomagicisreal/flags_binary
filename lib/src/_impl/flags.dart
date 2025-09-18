@@ -18,8 +18,9 @@ part of '../../flags_binary.dart';
 /// [_MFieldContainerMonthsDates]
 /// [_MSlotContainerPositionAble]
 ///
-/// [_MOperatableField]
-/// [_MEquatableSlot]
+/// [_MFieldOperatable]
+/// [_MSlotEquatable]
+/// [_MSlotField]
 ///
 /// concrete class:
 /// [_Field8], ...
@@ -83,9 +84,15 @@ mixin _MFlagsO64 implements _AFieldBits, _AFieldIdentical {
 ///
 ///
 mixin _MFlagsContainerSpatial1<T>
-    implements _AFlagsContainer<int, T>, _AFlagsSpatial1 {
+    implements _AFlagsContainer<int, T>, _AFlagsSpatial1, _AFlagsBitsAble<int> {
   @override
-  bool validateIndex(int index) => index.isRangeOpenLower(0, spatial1);
+  bool validateIndex(int index) => index.isRange(1, spatial1);
+
+  @override
+  int _bOf(int index) {
+    assert(validateIndex(index));
+    return index - 1;
+  }
 }
 
 mixin _MFlagsContainerSpatial2<T>
@@ -95,8 +102,7 @@ mixin _MFlagsContainerSpatial2<T>
         _AFlagsBitsAble<(int, int)> {
   @override
   bool validateIndex((int, int) index) =>
-      index.$1.isRangeOpenLower(0, spatial1) &&
-      index.$2.isRangeOpenLower(0, spatial2);
+      index.$1.isRange(1, spatial1) && index.$2.isRange(1, spatial2);
 
   @override
   int _bOf((int, int) index) {
@@ -112,9 +118,9 @@ mixin _MFlagsContainerSpatial3<T>
         _AFlagsBitsAble<(int, int, int)> {
   @override
   bool validateIndex((int, int, int) index) =>
-      index.$1.isRangeOpenLower(0, spatial1) &&
-      index.$2.isRangeOpenLower(0, spatial2) &&
-      index.$3.isRangeOpenLower(0, spatial3);
+      index.$1.isRange(1, spatial1) &&
+      index.$2.isRange(1, spatial2) &&
+      index.$3.isRange(1, spatial3);
 
   @override
   int _bOf((int, int, int) index) {
@@ -130,10 +136,10 @@ mixin _MFlagsContainerSpatial4<T>
         _AFlagsBitsAble<(int, int, int, int)> {
   @override
   bool validateIndex((int, int, int, int) index) =>
-      index.$1.isRangeOpenLower(0, spatial1) &&
-      index.$2.isRangeOpenLower(0, spatial2) &&
-      index.$3.isRangeOpenLower(0, spatial3) &&
-      index.$4.isRangeOpenLower(0, spatial4);
+      index.$1.isRange(1, spatial1) &&
+      index.$2.isRange(1, spatial2) &&
+      index.$3.isRange(1, spatial3) &&
+      index.$4.isRange(1, spatial4);
 
   @override
   int _bOf((int, int, int, int) index) {
@@ -255,7 +261,7 @@ mixin _MSlotContainerPositionAble<I, T>
 ///
 ///
 ///
-mixin _MOperatableField<F extends FieldParent>
+mixin _MFieldOperatable<F extends FieldParent>
     implements _AField, _AFieldIdentical, _AFlagsOperatable<F> {
   @override
   bool isSizeEqual(F other) {
@@ -353,7 +359,7 @@ mixin _MOperatableField<F extends FieldParent>
   }
 }
 
-mixin _MEquatableSlot<T, S extends SlotParent<T>>
+mixin _MSlotEquatable<T, S extends SlotParent<T>>
     implements _ASlot<T>, _AFlagsEquatable<S> {
   @override
   bool isSizeEqual(S other) => _slot.length == other._slot.length;
@@ -372,6 +378,58 @@ mixin _MEquatableSlot<T, S extends SlotParent<T>>
   }
 }
 
+//
+mixin _MSlotField<T, F extends FieldParent>
+    implements _ASlot<T>, _ASlotField<F> {
+  F _newField(bool native);
+
+  @override
+  F toField([bool native = false]) {
+    final slot = _slot,
+        result = _newField(native),
+        sizeEach = result._sizeEach,
+        field = result._field,
+        lengthField = field.length;
+    for (var j = 0; j < lengthField; j++) {
+      final start = sizeEach * j;
+      var bits = 0;
+      for (var i = 0; i < sizeEach; i++) {
+        if (slot[start + i] != null) bits |= 1 << i;
+      }
+      field[j] = bits;
+    }
+    return result;
+  }
+}
+
+mixin _MFieldSlot<I, S extends SlotParent>
+    implements
+        _AField,
+        _AFieldSlot<I, S>,
+        _AFieldIdentical,
+        _AFlagsIndexable<I> {
+  S get _newSlot;
+
+  @override
+  S toSlot<T>(T Function(I) mapper) {
+    final result = _newSlot,
+        slot = result._slot,
+        field = _field,
+        sizeEach = _sizeEach,
+        length = field.length;
+    for (var j = 0; j < length; j++) {
+      final start = sizeEach * j;
+      for (var bits = field[j], b = 0; b < sizeEach; bits >>= 1, b++) {
+        if (bits & 1 == 1) {
+          final i = start + b;
+          slot[i] = mapper(_indexOf(i));
+        }
+      }
+    }
+    return result;
+  }
+}
+
 ///
 ///
 ///
@@ -383,7 +441,7 @@ mixin _MOnFlagsIndexSub<F, I, J> on _MFieldContainerPositionAble<I>
 
   @override
   void includesOn(int index, Iterable<J> inclusion) {
-    assert(index.isRangeOpenLower(0, spatial1));
+    assert(index.isRange(1, spatial1));
     for (var indexSub in inclusion) {
       assert(_validateIndexSub(indexSub));
       _bSet(_bOf(_indexMerge(index, indexSub)));
@@ -392,7 +450,7 @@ mixin _MOnFlagsIndexSub<F, I, J> on _MFieldContainerPositionAble<I>
 
   @override
   void excludesOn(int index, Iterable<J> exclusion) {
-    assert(index.isRangeOpenLower(0, spatial1));
+    assert(index.isRange(1, spatial1));
     for (var indexSub in exclusion) {
       assert(_validateIndexSub(indexSub));
       _bClear(_bOf(_indexMerge(index, indexSub)));
@@ -403,15 +461,14 @@ mixin _MOnFlagsIndexSub<F, I, J> on _MFieldContainerPositionAble<I>
 mixin _MOnFieldSpatial2 on _MOnFlagsIndexSub<Field, (int, int), int>
     implements _AFlagsSpatial2 {
   @override
-  bool _validateIndexSub(int indexSub) =>
-      indexSub.isRangeOpenLower(0, spatial2);
+  bool _validateIndexSub(int indexSub) => indexSub.isRange(1, spatial2);
 
   @override
   (int, int) _indexMerge(int index, int indexSub) => (index, indexSub);
 
   @override
   Field collapseOn(int index) {
-    assert(index.isRangeOpenLower(0, spatial1));
+    assert(index.isRange(1, spatial1));
     final spatial2 = this.spatial2,
         start = (index - 1) * spatial2,
         source = _field,
@@ -436,8 +493,7 @@ mixin _MOnFieldSpatial3
     implements _AFlagsSpatial3 {
   @override
   bool _validateIndexSub((int, int) indexSub) =>
-      indexSub.$1.isRangeOpenLower(0, spatial2) &&
-      indexSub.$2.isRangeOpenLower(0, spatial3);
+      indexSub.$1.isRange(1, spatial2) && indexSub.$2.isRange(1, spatial3);
 
   @override
   (int, int, int) _indexMerge(int index, (int, int) indexSub) =>
@@ -445,7 +501,7 @@ mixin _MOnFieldSpatial3
 
   @override
   Field2D collapseOn(int index) {
-    assert(index.isRangeOpenLower(0, spatial1));
+    assert(index.isRange(1, spatial1));
     final spatial2 = this.spatial2,
         spatial3 = this.spatial3,
         start = (index - 1) * spatial2 * spatial3,
@@ -473,9 +529,9 @@ mixin _MOnFieldSpatial4
     implements _AFlagsSpatial4 {
   @override
   bool _validateIndexSub((int, int, int) indexSub) =>
-      indexSub.$1.isRangeOpenLower(0, spatial2) &&
-      indexSub.$2.isRangeOpenLower(0, spatial3) &&
-      indexSub.$3.isRangeOpenLower(0, spatial4);
+      indexSub.$1.isRange(1, spatial2) &&
+      indexSub.$2.isRange(1, spatial3) &&
+      indexSub.$3.isRange(1, spatial4);
 
   @override
   (int, int, int, int) _indexMerge(int index, (int, int, int) indexSub) =>
@@ -483,7 +539,7 @@ mixin _MOnFieldSpatial4
 
   @override
   Field3D collapseOn(int index) {
-    assert(index.isRangeOpenLower(0, spatial1));
+    assert(index.isRange(1, spatial1));
     final spatial2 = this.spatial2,
         spatial3 = this.spatial3,
         spatial4 = this.spatial4,

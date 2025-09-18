@@ -89,36 +89,38 @@ mixin _MSetField
   }
 }
 
-mixin _MSetFieldIndexable<T> on _MFieldContainerPositionAble<T>
-    implements _AField, _AFieldIdentical, _AFlagsSet<T, T> {
-  T _indexOf(int position);
+mixin _MSetFieldIndexable<I> on _MFieldContainerPositionAble<I>
+    implements
+        _AFlagsIndexable<I>,
+        _AField,
+        _AFieldIdentical,
+        _AFlagsSet<I, I> {
+  @override
+  I? get first => _field.bFirst(_sizeEach).nullOrMap(_indexOf);
 
   @override
-  T? get first => _field.bFirst(_sizeEach).nullOrMap(_indexOf);
+  I? get last => _field.bLast(_sizeEach).nullOrMap(_indexOf);
 
   @override
-  T? get last => _field.bLast(_sizeEach).nullOrMap(_indexOf);
-
-  @override
-  T? firstAfter(T index) => _field
+  I? firstAfter(I index) => _field
       .bFirstAfter(_bOf(index), _shift, _mask, _sizeEach)
       .nullOrMap(_indexOf);
 
   @override
-  T? lastBefore(T index) => _field
+  I? lastBefore(I index) => _field
       .bLastBefore(_bOf(index), _shift, _mask, _sizeEach)
       .nullOrMap(_indexOf);
 
   @override
-  Iterable<T> get availablesForward =>
+  Iterable<I> get availablesForward =>
       _field.bitsForwardMap(_indexOf, _sizeEach);
 
   @override
-  Iterable<T> get availablesBackward =>
+  Iterable<I> get availablesBackward =>
       _field.bitsBackwardMap(_indexOf, _sizeEach);
 
   @override
-  Iterable<T> availablesRecent([T? from, T? to]) {
+  Iterable<I> availablesRecent([I? from, I? to]) {
     assert(() {
       if (from == null || to == null) return true;
       final bFrom = _bOf(from);
@@ -152,7 +154,7 @@ mixin _MSetFieldIndexable<T> on _MFieldContainerPositionAble<T>
   }
 
   @override
-  Iterable<T> availablesLatest([T? from, T? to]) {
+  Iterable<I> availablesLatest([I? from, I? to]) {
     assert(() {
       if (from == null || to == null) return true;
       final pFrom = _bOf(from);
@@ -330,7 +332,7 @@ mixin _MSetSlot<I, T>
   @override
   void includesFrom(Iterable<T> iterable, I begin, [bool inclusive = true]) {
     final slot = _slot;
-    var i = inclusive ? _bOf(begin): _bOf(begin) + 1;
+    var i = inclusive ? _bOf(begin) : _bOf(begin) + 1;
     assert(i >= 0 && i < slot.length);
     for (var it in iterable) {
       slot[i] = it;

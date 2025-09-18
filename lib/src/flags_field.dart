@@ -27,11 +27,18 @@ abstract class Field extends FieldParent
         _MSetField,
         _MSetBitsField<int>,
         _MSetBitsFieldSpatial1,
-        _MOperatableField<Field> {
+        _MFieldOperatable<Field>,
+        _MFieldSlot<int, Slot> {
   @override
   final int spatial1;
 
   const Field._(this.spatial1, super._field);
+
+  @override
+  int _indexOf(int position) => position;
+
+  @override
+  Slot get _newSlot => Slot(size);
 
   @override
   bool operator [](int index) {
@@ -67,9 +74,10 @@ abstract class Field2D extends FieldParent
         _MSetFieldIndexable<(int, int)>,
         _MSetBitsField<(int, int)>,
         _MSetBitsFieldSpatial2,
-        _MOperatableField<Field2D>,
+        _MFieldOperatable<Field2D>,
         _MOnFlagsIndexSub<Field, (int, int), int>,
-        _MOnFieldSpatial2 {
+        _MOnFieldSpatial2,
+        _MFieldSlot<(int, int), Slot2D> {
   @override
   final int spatial1;
   @override
@@ -78,13 +86,16 @@ abstract class Field2D extends FieldParent
   const Field2D._(this.spatial1, this.spatial2, super.field);
 
   @override
+  Slot2D get _newSlot => Slot2D(spatial1, spatial2);
+
+  @override
   (int, int) _indexOf(int position) {
     final s2 = spatial2;
-    assert(position.isRangeOpenLower(0, spatial1 * s2));
+    assert(position.isRange(1, spatial1 * s2));
     return (position ~/ s2, position % s2);
   }
 
-  factory Field2D(int width, int height, {bool native = false}) {
+  factory Field2D(int width, int height, [bool native = false]) {
     assert(width > 1 && height > 1);
     final size = width * height;
     if (size < TypedDateListInt.limit8) return _Field2D8(width, height);
@@ -107,9 +118,10 @@ abstract class Field3D extends FieldParent
         _MSetBitsField<(int, int, int)>,
         _MSetFieldIndexable<(int, int, int)>,
         _MSetBitsFieldSpatial3,
-        _MOperatableField<Field3D>,
+        _MFieldOperatable<Field3D>,
         _MOnFlagsIndexSub<Field2D, (int, int, int), (int, int)>,
-        _MOnFieldSpatial3 {
+        _MOnFieldSpatial3,
+        _MFieldSlot<(int, int, int), Slot3D> {
   @override
   final int spatial1;
   @override
@@ -120,9 +132,12 @@ abstract class Field3D extends FieldParent
   const Field3D._(this.spatial1, this.spatial2, this.spatial3, super.field);
 
   @override
+  Slot3D get _newSlot => Slot3D(spatial1, spatial2, spatial3);
+
+  @override
   (int, int, int) _indexOf(int position) {
     final s2 = spatial2, s3 = spatial3;
-    assert(position.isRangeOpenLower(0, spatial1 * s2 * s3));
+    assert(position.isRange(1, spatial1 * s2 * s3));
     final p2 = position ~/ s3;
     return (p2 ~/ s2, p2 % s2, position % s3);
   }
@@ -131,7 +146,9 @@ abstract class Field3D extends FieldParent
     assert(width > 1 && height > 1 && depth > 1);
     final size = width * height * depth;
     if (size < TypedDateListInt.limit8) return _Field3D8(width, height, depth);
-    if (size < TypedDateListInt.limit16) return _Field3D16(width, height, depth);
+    if (size < TypedDateListInt.limit16) {
+      return _Field3D16(width, height, depth);
+    }
     if (size > TypedDateListInt.sizeEach32 && native) {
       return _Field3D64(
         width,
@@ -140,7 +157,12 @@ abstract class Field3D extends FieldParent
         TypedDateListInt.quotientCeil64(size),
       );
     }
-    return _Field3D32(width, height, depth, TypedDateListInt.quotientCeil32(size));
+    return _Field3D32(
+      width,
+      height,
+      depth,
+      TypedDateListInt.quotientCeil32(size),
+    );
   }
 }
 
@@ -155,9 +177,10 @@ abstract class Field4D extends FieldParent
         _MSetBitsField<(int, int, int, int)>,
         _MSetFieldIndexable<(int, int, int, int)>,
         _MSetBitsFieldSpatial4,
-        _MOperatableField<Field4D>,
+        _MFieldOperatable<Field4D>,
         _MOnFlagsIndexSub<Field3D, (int, int, int, int), (int, int, int)>,
-        _MOnFieldSpatial4 {
+        _MOnFieldSpatial4,
+        _MFieldSlot<(int, int, int, int), Slot4D> {
   @override
   final int spatial1;
   @override
@@ -176,9 +199,12 @@ abstract class Field4D extends FieldParent
   );
 
   @override
+  Slot4D get _newSlot => Slot4D(spatial1, spatial2, spatial3, spatial4);
+
+  @override
   (int, int, int, int) _indexOf(int position) {
     final s1 = spatial1, s2 = spatial2, s3 = spatial3;
-    assert(position.isRangeOpenLower(0, s1 * s2 * s3 * spatial4));
+    assert(position.isRange(1, s1 * s2 * s3 * spatial4));
     final p2 = position ~/ s1, p3 = p2 ~/ s2;
     return (p3 ~/ s3, p3 % s3, p2 % s2, position % s1);
   }
@@ -195,7 +221,6 @@ abstract class Field4D extends FieldParent
   }
 }
 
-
 ///
 ///
 ///
@@ -206,15 +231,15 @@ class FieldDatesInMonths extends FieldParent
         _MFieldContainerMonthsDates,
         _MSetFieldMonthsDatesScoped,
         _MSetBitsFieldMonthsDates,
-        _MOperatableField<FieldDatesInMonths> {
+        _MFieldOperatable<FieldDatesInMonths> {
   @override
   final (int, int) begin;
   @override
   final (int, int) end;
 
   FieldDatesInMonths(this.begin, this.end)
-      : assert(_isValidYearMonthScope(begin, end), 'invalid date $begin ~ $end'),
-        super(Uint32List(begin.monthsToYearMonth(end.$1, end.$2) + 1));
+    : assert(_isValidYearMonthScope(begin, end), 'invalid date $begin ~ $end'),
+      super(Uint32List(begin.monthsToYearMonth(end.$1, end.$2) + 1));
 
   @override
   FieldDatesInMonths get newZero => FieldDatesInMonths(begin, end);

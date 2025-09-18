@@ -13,8 +13,10 @@ part of '../flags_binary.dart';
 /// [_AFieldBits]
 /// [_AFlagsSet]
 /// [_AFieldIdentical]
-///
 /// [FieldParent]
+///
+/// [_ASlot]
+/// [_ASlotField]
 /// [SlotParent]
 ///
 ///
@@ -51,15 +53,16 @@ abstract class _AFlagsSpatial4 implements _AFlagsSpatial3 {
 }
 
 ///
-/// All flags index should start from 1, because all the flags implementation required bits.
-/// it's impossible for flags implementation to have [int.bitLength] < 1.
-/// start from 1 prevents subtraction finding last index, [List.length] - 1.
-/// see also [TypedDateListInt.bLastOf], [TypedDateListInt.bitsBackwardOf], ...
-/// if started from 0, yielding iterable elements from the functions be like [TypedDateListInt.bitsBackwardOf] required '- 1'
-/// for each iterable element.
+/// All flags index start from 1, because it's impossible for bitFlags implementation to have [int.bitLength] < 1.
+/// Starting from 1 prevents subtraction finding last index for each iterable element
+/// see also [TypedDateListInt.bLastOf], [TypedDateListInt.bitsBackwardOf]
 ///
 abstract class _AFlagsBitsAble<I> implements _PFlags {
   int _bOf(I index);
+}
+
+abstract class _AFlagsIndexable<I> implements _PFlags {
+  I _indexOf(int position);
 }
 
 abstract class _AFlagsOn<F, I> implements _PFlags {
@@ -188,4 +191,14 @@ sealed class SlotParent<T> extends _PFlags implements _ASlot<T> {
       slot[i] = null;
     }
   }
+}
+
+
+//
+abstract class _ASlotField<F extends FieldParent> implements _PFlags {
+  F toField();
+}
+
+abstract class _AFieldSlot<I, S extends SlotParent> implements _PFlags {
+  S toSlot<T>(T Function(I) mapper);
 }
