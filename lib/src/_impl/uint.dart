@@ -3,7 +3,7 @@ part of '../../flags_binary.dart';
 ///
 ///
 ///
-/// [TypedDateListInt]
+/// [TypedDataListInt]
 ///
 ///
 ///
@@ -16,12 +16,12 @@ part of '../../flags_binary.dart';
 ///
 /// instances methods:
 /// return void                   : [pConsume1], ...
-/// return bool                   : [bOn], ...
-/// return integer                : [bFirstOf], ...
+/// return bool                   : [iOn], ...
+/// return integer                : [iFirstOf], ...
 /// return iterable integer       : [bitsForward], ...
 /// return iterable provided type : [mapPAvailable], ...
 ///
-extension TypedDateListInt on TypedDataList<int> {
+extension TypedDataListInt on TypedDataList<int> {
   // static const int limit32 = 33;
   // static const int limit64 = 65;
   static const int countsAByte = 8;
@@ -56,7 +56,8 @@ extension TypedDateListInt on TypedDataList<int> {
 
   ///
   /// [pConsume1], [pConsume0]
-  /// [bSet], [bClear]
+  /// [iSet], [iClear]
+  /// [shift]
   ///
   void pConsume1(void Function(int p) consume, int bSize, [int? jLimit]) {
     jLimit ??= length - 1;
@@ -78,39 +79,62 @@ extension TypedDateListInt on TypedDataList<int> {
     }
   }
 
-  void bSet(int b, int shift, int mask) {
-    assert(b >= 0 && mask + 1 == 1 << shift);
-    this[b >> shift] |= 1 << (b & mask);
+  void iSet(int i, int shift, int mask) {
+    assert(i >= 0 && mask + 1 == 1 << shift);
+    this[i >> shift] |= 1 << (i & mask);
   }
 
-  void bClear(int b, int shift, int mask) {
-    assert(b >= 0 && mask + 1 == 1 << shift);
-    this[b >> shift] &= ~(1 << (b & mask));
+  void iClear(int i, int shift, int mask) {
+    assert(i >= 0 && mask + 1 == 1 << shift);
+    this[i >> shift] &= ~(1 << (i & mask));
+  }
+
+  void shift(int count, [int begin = 0, int? end]) {
+    final last = end ?? length - 1;
+    if (count == 0 || count >= last || count <= -last) return;
+    if (count > 0) {
+      var i = last;
+      for (; i >= count; i--) {
+        this[i] = this[i - count];
+      }
+      for (; i >= begin; i--) {
+        this[i] = 0;
+      }
+    } else {
+      final c = -count;
+      var i = 0;
+      for (; i < c; i++) {
+        this[i] = this[c + i];
+      }
+      for (; i <= last; i++) {
+        this[i] = 0;
+      }
+    }
   }
 
   ///
-  /// [bOn]
+  /// [iOn]
   ///
-  bool bOn(int b, int shift, int mask) {
-    assert(b >= 0 && mask + 1 == 1 << shift);
-    return this[b >> shift] >> (b & mask) & 1 == 1;
+  bool iOn(int i, int shift, int mask) {
+    assert(i >= 0 && mask + 1 == 1 << shift);
+    return this[i >> shift] >> (i & mask) & 1 == 1;
   }
 
   ///
-  /// [bFirstOf], [bFirstOfFrom], [bFirstOfTo], [bFirstOfBetween], ..., bFirstNOf, ...?
-  /// [bFirst], [bFirstFrom], [bFirstTo], [bFirstBetween], ...
-  /// [bFirstAfter]
+  /// [iFirstOf], [iFirstOfFrom], [iFirstOfTo], [iFirstOfBetween], ..., iFirstNOf, ...?
+  /// [iFirst], [iFirstFrom], [iFirstTo], [iFirstBetween], ...
+  /// [iFirstAfter]
   ///
-  /// [bLastOf], [bLastOfFrom], [bLastOfTo], [bLastOfBetween], ...
-  /// [bLast], [bLastFrom], [bLastTo], [bLastBetween], ...
-  /// [bLastBefore]
+  /// [iLastOf], [iLastOfFrom], [iLastOfTo], [iLastOfBetween], ...
+  /// [iLast], [iLastFrom], [iLastTo], [iLastBetween], ...
+  /// [iLastBefore]
   ///
   ///
 
   ///
   ///
   ///
-  int? bFirstOf(int j) {
+  int? iFirstOf(int j) {
     assert(j >= 0 && j < length);
     for (var bits = this[j], b = 1; bits > 0; bits >>= 1, b++) {
       if (bits & 1 == 1) return b;
@@ -118,7 +142,7 @@ extension TypedDateListInt on TypedDataList<int> {
     return null;
   }
 
-  int? bFirstOfFrom(int j, int i) {
+  int? iFirstOfFrom(int j, int i) {
     assert(j >= 0 && j < length && i >= 0);
     for (var bits = this[j] >> i, b = i + 1; bits > 0; bits >>= 1, b++) {
       if (bits & 1 == 1) return b;
@@ -126,7 +150,7 @@ extension TypedDateListInt on TypedDataList<int> {
     return null;
   }
 
-  int? bFirstOfTo(int j, int iTo) {
+  int? iFirstOfTo(int j, int iTo) {
     assert(j >= 0 && j < length && iTo > 0);
     var bits = this[j], b = 1;
     for (final bLimit = b + iTo; b < bLimit; bits >>= 1, b++) {
@@ -135,7 +159,7 @@ extension TypedDateListInt on TypedDataList<int> {
     return null;
   }
 
-  int? bFirstOfBetween(int j, int i, int iTo) {
+  int? iFirstOfBetween(int j, int i, int iTo) {
     assert(j >= 0 && j < length && i > 0 && i < iTo);
     var bits = this[j] >> i, b = i + 1;
     for (final bLimit = b + iTo; b < bLimit; bits >>= 1, b++) {
@@ -147,7 +171,7 @@ extension TypedDateListInt on TypedDataList<int> {
   ///
   ///
   ///
-  int? bFirst(int bSize) {
+  int? iFirst(int bSize) {
     assert(bSize > 0);
     final length = this.length;
     for (var j = 0, bits = this[j]; j < length; j++) {
@@ -158,7 +182,7 @@ extension TypedDateListInt on TypedDataList<int> {
     return null;
   }
 
-  int? bFirstFrom(int bSize, int j, int i) {
+  int? iFirstFrom(int bSize, int j, int i) {
     assert(j >= 0 && j < this.length && i >= 0 && i < bSize);
     final length = this.length;
     var bits = this[j] >> i, b = i + 1;
@@ -172,7 +196,7 @@ extension TypedDateListInt on TypedDataList<int> {
     }
   }
 
-  int? bFirstTo(int bSize, int jTo, int iTo) {
+  int? iFirstTo(int bSize, int jTo, int iTo) {
     assert(jTo >= 0 && jTo < length && iTo >= 0 && iTo < bSize);
     var bits = this[0];
     for (var j = 0; j < jTo; j++, bits = this[j]) {
@@ -187,7 +211,7 @@ extension TypedDateListInt on TypedDataList<int> {
     return null;
   }
 
-  int? bFirstBetween(int bSize, int j, int i, int jTo, int iTo) {
+  int? iFirstBetween(int bSize, int j, int i, int jTo, int iTo) {
     assert(j >= 0 && j <= jTo && jTo < length);
     assert(i >= 0 && i < bSize && iTo > 0 && iTo < bSize);
 
@@ -204,16 +228,16 @@ extension TypedDateListInt on TypedDataList<int> {
     return null;
   }
 
-  int? bFirstAfter(int index, int shift, int mask, int bSize) {
+  int? iFirstAfter(int index, int shift, int mask, int bSize) {
     assert(index >= 0 && index < length * bSize && mask + 1 == 1 << shift);
     if (++index >= length * bSize - 1) return null;
-    return bFirstFrom(bSize, index >> shift, index & mask);
+    return iFirstFrom(bSize, index >> shift, index & mask);
   }
 
   ///
   ///
   ///
-  int? bLastOf(int j) {
+  int? iLastOf(int j) {
     assert(j >= 0 && j < length);
     for (var bits = this[j], m = 1 << bits.bitLength - 1; m > 0; m >>= 1) {
       if (bits & m == m) return m.bitLength;
@@ -221,7 +245,7 @@ extension TypedDateListInt on TypedDataList<int> {
     return null;
   }
 
-  int? bLastOfFrom(int j, int i) {
+  int? iLastOfFrom(int j, int i) {
     assert(j >= 0 && j < length && i > 0);
     for (
       var bits = this[j], m = 1 << math.min(i, bits.bitLength - 1);
@@ -233,7 +257,7 @@ extension TypedDateListInt on TypedDataList<int> {
     return null;
   }
 
-  int? bLastOfTo(int j, int iTo) {
+  int? iLastOfTo(int j, int iTo) {
     assert(j >= 0 && j < length && iTo > 0);
     final smallest = 1 << iTo;
     for (
@@ -246,7 +270,7 @@ extension TypedDateListInt on TypedDataList<int> {
     return null;
   }
 
-  int? bLastOfBetween(int j, int i, int iTo) {
+  int? iLastOfBetween(int j, int i, int iTo) {
     assert(j >= 0 && j < length && iTo > 0 && iTo < i);
     final smallest = 1 << iTo;
     for (
@@ -262,7 +286,7 @@ extension TypedDateListInt on TypedDataList<int> {
   ///
   ///
   ///
-  int? bLast(int bSize) {
+  int? iLast(int bSize) {
     assert(bSize > 0);
     for (var j = length - 1, bits = this[j]; j >= 0; j--) {
       for (var m = 1 << bits.bitLength - 1; m > 0; m >>= 1) {
@@ -272,7 +296,7 @@ extension TypedDateListInt on TypedDataList<int> {
     return null;
   }
 
-  int? bLastFrom(int bSize, int j, int i) {
+  int? iLastFrom(int bSize, int j, int i) {
     assert(j >= 0 && j < length && i >= 0 && i < bSize);
     var bits = this[j], m = 1 << math.min(i, bits.bitLength - 1);
     while (true) {
@@ -285,7 +309,7 @@ extension TypedDateListInt on TypedDataList<int> {
     }
   }
 
-  int? bLastTo(int bSize, int jTo, int iTo) {
+  int? iLastTo(int bSize, int jTo, int iTo) {
     assert(jTo >= 0 && jTo < length && iTo >= 0 && iTo < bSize);
     var j = length - 1, bits = this[j], m = 1 << bits.bitLength - 1;
     for (; j > jTo; j--, bits = this[j], m = 1 << bits.bitLength - 1) {
@@ -300,7 +324,7 @@ extension TypedDateListInt on TypedDataList<int> {
     return null;
   }
 
-  int? bLastBetween(int bSize, int j, int i, int jTo, int iTo) {
+  int? iLastBetween(int bSize, int j, int i, int jTo, int iTo) {
     assert(jTo >= 0 && jTo <= j && j < length);
     assert(iTo >= 0 && iTo < bSize && i >= 0 && i < bSize);
 
@@ -316,28 +340,28 @@ extension TypedDateListInt on TypedDataList<int> {
     return null;
   }
 
-  int? bLastBefore(int index, int shift, int mask, int bSize) {
+  int? iLastBefore(int index, int shift, int mask, int bSize) {
     assert(index >= 0 && index < length * bSize && mask + 1 == 1 << shift);
     if (--index < 1) return null;
-    return bLastFrom(bSize, index >> shift, index & mask);
+    return iLastFrom(bSize, index >> shift, index & mask);
   }
 
   ///
-  /// (algorithm is same as [bFirstOf], ...)
+  /// (algorithm is same as [iFirstOf], ...)
   /// [bitsForwardOf], [bitsForwardOfFrom], [bitsForwardOfTo], [bitsForwardOfBetween]
   /// [bitsForwardMapOf], [bitsForwardMapOfFrom], [bitsForwardMapOfTo], [bitsForwardMapOfBetween]
   ///
-  /// (algorithm is same as [bLastOf], ...)
+  /// (algorithm is same as [iLastOf], ...)
   /// [bitsBackwardOf], [bitsBackwardOfFrom], [bitsBackwardOfTo], [bitsBackwardOfBetween]
   /// [bitsBackwardMapOf], [bitsBackwardMapOfFrom], [bitsBackwardMapOfTo], [bitsBackwardMapOfBetween]
   ///
   /// (algorithm is same as [bitsForwardOfFrom], [bitsForwardOfBetween], [bitsBackwardOf])
   /// [datesForwardOf], [datesForwardOfBetween], [datesBackwardOfBetween]
   ///
-  /// (algorithm is same as [bFirst], ...)
+  /// (algorithm is same as [iFirst], ...)
   /// [bitsForward], [bitsForwardFrom], [bitsForwardTo], [bitsForwardBetween], [bitsForwardAfter]
   ///
-  /// (algorithm is same as [bLast], ...)
+  /// (algorithm is same as [iLast], ...)
   /// [bitsBackward], [bitsBackwardFrom], [bitsBackwardTo], [bitsBackwardBetween], [bitsBackwardBefore]
   ///
   ///

@@ -13,6 +13,165 @@ mixin _MSetFieldMonthsDatesScoped
         _AFlagsSet<(int, int, int), (int, int, int)>,
         _AFlagsScoped<(int, int)>,
         _AField {
+  @override
+  void shift(int count, [(int, int, int)? from, (int, int, int)? to]) {
+    assert(() {
+      if (from == null) return to == null || _isValidDate(to);
+      if (_isInvalidDate(from)) return false;
+      return to == null || (_isValidDate(to) && from <= to);
+    }());
+    if (count == 0) return;
+
+    //
+    final field = _field,
+        last = field.length - 1,
+        begin = this.begin,
+        indexOf = begin.monthsToYearMonth;
+    final int yFrom, mFrom, yTo, mTo, iFrom, iTo, jFrom, jTo;
+    if (from == null) {
+      yFrom = begin.$1;
+      mFrom = begin.$2;
+      jFrom = 0;
+      iFrom = 0;
+    } else {
+      yFrom = from.$1;
+      mFrom = from.$2;
+      final j = indexOf(yFrom, mFrom);
+      if (j > last) return;
+      jFrom = math.max(0, j);
+      iFrom = from.$3 - 1;
+    }
+    if (to == null) {
+      final end = this.end;
+      yTo = end.$1;
+      mTo = end.$2;
+      jTo = last;
+      iTo = _monthDaysOf(yTo, mTo) - 1;
+    } else {
+      yTo = to.$1;
+      mTo = to.$2;
+      final j = indexOf(yTo, mTo);
+      if (j < 0) return;
+      jTo = math.min(last, j);
+      iTo = to.$3 - 1;
+    }
+
+    // throw UnimplementedError();
+
+    //
+    const january = 1, december = 12;
+    if (count > 0) {
+      int j = jTo,
+          i = iTo,
+          m = mTo,
+          y = yTo,
+          iSource = i - count,
+          jSource = jTo,
+          ySource = yTo,
+          mSource = mTo,
+          source = field[jSource];
+
+      // todo: find first 1
+
+      //
+      void findDestinationMonth() {
+        j--;
+        if (--m < january) {
+          y--;
+          m = december;
+        }
+        i = _monthDaysOf(y, m) - 1;
+      }
+
+      bool findSourceMonth() {
+        if (--jSource < 0) return false;
+        if (--mSource < january) {
+          ySource--;
+          mSource = december;
+        }
+        source = field[jSource];
+
+        while (source == 0) {
+          if (--m < january) {
+            y--;
+            m = december;
+          }
+          final days = _monthDaysOf(y, m),
+              iLast = days - _monthDaysOf(ySource, mSource) + 1 + i;
+
+          // skip days of current month
+          var mask = 1 << i--;
+          while (i >= 0) {
+            mask |= 1 << i--;
+          }
+          field[j--] &= ~mask;
+
+          // skip days of previous month
+          i = days - 1;
+          mask = 1 << i--;
+          while (i >= iLast) {
+            mask |= 1 << i--;
+          }
+          field[j] &= ~mask;
+
+          if (--jSource < 0) return false;
+          if (--mSource < january) {
+            ySource--;
+            mSource = december;
+          }
+          source = field[jSource];
+        }
+        iSource = _monthDaysOf(ySource, mSource) - 1;
+        return true;
+      }
+
+      void resetRemain() {
+        while (i >= 0) {
+          field[j] &= ~(1 << i--);
+        }
+        while (j > 0) {
+          field[--j] = 0;
+        }
+      }
+
+      bool shiftThenNoSource() {
+        print('($ySource, $mSource, ${iSource + 1}) -> ($y, $m, ${i + 1})');
+        if (source >> iSource & 1 == 1) {
+          field[j] |= 1 << i--;
+        } else {
+          field[j] &= ~(1 << i--);
+        }
+        if (--iSource >= 0) return false;
+        if (findSourceMonth()) {
+          return false;
+        }
+        resetRemain();
+        return true;
+      }
+
+      while (iSource < 0) {
+        print('shift over month');
+        if (findSourceMonth()) {
+          if (iSource >= 0) break;
+          continue;
+        }
+        return;
+      }
+
+      for (; j > jFrom; findDestinationMonth()) {
+        while (i >= 0) {
+          if (shiftThenNoSource()) return;
+        }
+      }
+      while (i >= iFrom) {
+        if (shiftThenNoSource()) return;
+      }
+      return;
+    }
+
+    throw UnimplementedError();
+  }
+
   ///
   /// [_firstMonthIndexedIn], [_lastIndexedMonthIn]
   ///
@@ -39,13 +198,13 @@ mixin _MSetFieldMonthsDatesScoped
   int? firstInMonth(int year, int month) {
     assert(_isValidMonth(month));
     final field = _field, i = begin.monthsToYearMonth(year, month);
-    return i < 0 || i >= field.length ? null : field.bFirstOf(i);
+    return i < 0 || i >= field.length ? null : field.iFirstOf(i);
   }
 
   int? lastInMonth(int year, int month) {
     assert(_isValidMonth(month));
     final field = _field, i = begin.monthsToYearMonth(year, month);
-    return i < 0 || i >= field.length ? null : field.bLastOf(i);
+    return i < 0 || i >= field.length ? null : field.iLastOf(i);
   }
 
   ///
@@ -59,7 +218,7 @@ mixin _MSetFieldMonthsDatesScoped
     final begin = this.begin,
         field = _field,
         length = field.length,
-        firstOf = field.bFirstOf;
+        firstOf = field.iFirstOf;
     for (var y = begin.$1, m = begin.$2, j = 0; j < length; j++) {
       final i = firstOf(j);
       if (i != null) return (y, m, i + 1);
@@ -81,7 +240,7 @@ mixin _MSetFieldMonthsDatesScoped
         mBegin = begin.$2,
         field = _field,
         length = field.length,
-        firstOf = field.bFirstOf;
+        firstOf = field.iFirstOf;
 
     int j;
     if (y < yBegin || (y == yBegin && m < mBegin)) {
@@ -95,7 +254,7 @@ mixin _MSetFieldMonthsDatesScoped
       if (j >= length) return null;
       final dAfter = index.$3;
       if (dAfter < _monthDaysOf(y, m)) {
-        final i = field.bFirstOfFrom(j, dAfter - 1);
+        final i = field.iFirstOfFrom(j, dAfter - 1);
         if (i != null) return (y, m, i + 1);
       }
     }
@@ -119,7 +278,7 @@ mixin _MSetFieldMonthsDatesScoped
     if (mj == null) return null;
     final end = this.end,
         mLast = y == end.$1 ? end.$2 : DateTime.december,
-        firstOf = _field.bFirstOf;
+        firstOf = _field.iFirstOf;
     for (var m = mj.$1, j = mj.$2; m <= mLast; m++, j++) {
       final i = firstOf(j);
       if (i != null) return (y, m, i + 1);
@@ -135,7 +294,7 @@ mixin _MSetFieldMonthsDatesScoped
   @override
   (int, int, int)? get last {
     const january = DateTime.january, december = DateTime.december;
-    final end = this.end, field = _field, lastOf = field.bLastOf;
+    final end = this.end, field = _field, lastOf = field.iLastOf;
     for (var y = end.$1, m = end.$2, j = field.length - 1; j >= 0; j--) {
       final i = lastOf(j);
       if (i != null) return (y, m, i + 1);
@@ -156,7 +315,7 @@ mixin _MSetFieldMonthsDatesScoped
         mEnd = end.$2,
         field = _field,
         length = field.length,
-        lastOf = field.bLastOf;
+        lastOf = field.iLastOf;
     var y = index.$1, m = index.$2;
 
     int j;
@@ -171,7 +330,7 @@ mixin _MSetFieldMonthsDatesScoped
       if (j < 0) return null;
       final dBefore = index.$3;
       if (dBefore > 1) {
-        final i = field.bLastOfFrom(j, dBefore - 1);
+        final i = field.iLastOfFrom(j, dBefore - 1);
         if (i != null) return (y, m, i + 1);
       }
     }
@@ -195,7 +354,7 @@ mixin _MSetFieldMonthsDatesScoped
     if (mj == null) return null;
     final begin = this.begin,
         mFirst = y == begin.$1 ? begin.$2 : DateTime.january,
-        lastOf = _field.bLastOf;
+        lastOf = _field.iLastOf;
     for (var m = mj.$1, j = mj.$2; m >= mFirst; m--, j++) {
       final i = lastOf(j);
       if (i != null) return (y, m, i + 1);
@@ -213,7 +372,7 @@ mixin _MSetFieldMonthsDatesScoped
     final begin = this.begin,
         field = _field,
         length = field.length,
-        firstOf = field.bFirstOf;
+        firstOf = field.iFirstOf;
     var y = begin.$1, m = begin.$2, j = 0;
 
     while (true) {
@@ -242,7 +401,7 @@ mixin _MSetFieldMonthsDatesScoped
       final begin = this.begin,
           field = _field,
           length = field.length,
-          firstOf = field.bFirstOf;
+          firstOf = field.iFirstOf;
       var y = begin.$1, m = begin.$2, j = 0;
       while (true) {
         if (firstOf(j) != null) yield (y, m);
@@ -259,7 +418,7 @@ mixin _MSetFieldMonthsDatesScoped
     // year != null
     final mj = _firstMonthIndexedIn(year);
     if (mj == null) return;
-    final firstOf = _field.bFirstOf;
+    final firstOf = _field.iFirstOf;
     final end = this.end, mLast = year == end.$1 ? end.$2 : DateTime.december;
     for (var m = mj.$1, j = mj.$2; m <= mLast; m++, j++) {
       if (firstOf(j) != null) yield (year, m);
@@ -530,16 +689,21 @@ mixin _MSetFieldMonthsDatesScoped
   }
 }
 
-mixin _MSetBitsFieldMonthsDates
-    on _MFlagsContainerScopedDate<bool>, _MBitsFieldMonthsDates
+mixin _MSetBitsFieldMonthsDates on _MFlagsContainerScopedDate<bool>
     implements _AFieldSet<(int, int, int), (int, int, int)> {
+  static void _bSet(TypedDataList<int> field, int j, int i) =>
+      field[j] |= 1 << i;
+
+  static void _bClear(TypedDataList<int> field, int j, int i) =>
+      field[j] &= ~(1 << i);
+
   @override
   void includesSub((int, int, int) from, [(int, int, int)? to]) =>
-      _sub(_MBitsFieldMonthsDates._bSet, from, to);
+      _sub(_bSet, from, to);
 
   @override
   void excludesSub((int, int, int) from, [(int, int, int)? to]) =>
-      _sub(_MBitsFieldMonthsDates._bClear, from, to);
+      _sub(_bClear, from, to);
 
   void _sub(
     void Function(TypedDataList<int>, int, int) consume,
@@ -558,7 +722,6 @@ mixin _MSetBitsFieldMonthsDates
         dTo = to?.$3 ?? _monthDaysOf(yTo, mTo),
         field = _field,
         jFrom = begin.monthsToYearMonth(yFrom, mFrom);
-    ;
 
     // ==
     if (yFrom == yTo) {

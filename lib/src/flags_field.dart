@@ -24,7 +24,7 @@ abstract class Field extends FieldParent
     with
         _MFlagsContainerSpatial1<bool>,
         _MBitsField,
-        _MSetField,
+        _MSetFieldBits,
         _MSetBitsField<int>,
         _MSetBitsFieldSpatial1,
         _MFieldOperatable<Field>,
@@ -54,12 +54,12 @@ abstract class Field extends FieldParent
 
   factory Field(int width, [bool native = false]) {
     assert(width > 1);
-    if (width < TypedDateListInt.limit8) return _Field8(width);
-    if (width < TypedDateListInt.limit16) return _Field16(width);
-    if (width > TypedDateListInt.sizeEach32 && native) {
-      return _Field64(width, TypedDateListInt.quotientCeil64(width));
+    if (width < TypedDataListInt.limit8) return _Field8(width);
+    if (width < TypedDataListInt.limit16) return _Field16(width);
+    if (width > TypedDataListInt.sizeEach32 && native) {
+      return _Field64(width, TypedDataListInt.quotientCeil64(width));
     }
-    return _Field32(width, TypedDateListInt.quotientCeil32(width));
+    return _Field32(width, TypedDataListInt.quotientCeil32(width));
   }
 }
 
@@ -71,7 +71,7 @@ abstract class Field2D extends FieldParent
         _MFlagsContainerSpatial2<bool>,
         _MBitsField,
         _MFieldContainerPositionAble<(int, int)>,
-        _MSetFieldIndexable<(int, int)>,
+        _MSetFieldBitsIndexable<(int, int)>,
         _MSetBitsField<(int, int)>,
         _MSetBitsFieldSpatial2,
         _MFieldOperatable<Field2D>,
@@ -98,12 +98,12 @@ abstract class Field2D extends FieldParent
   factory Field2D(int width, int height, [bool native = false]) {
     assert(width > 1 && height > 1);
     final size = width * height;
-    if (size < TypedDateListInt.limit8) return _Field2D8(width, height);
-    if (size < TypedDateListInt.limit16) return _Field2D16(width, height);
-    if (size > TypedDateListInt.sizeEach32 && native) {
-      return _Field2D64(width, height, TypedDateListInt.quotientCeil64(size));
+    if (size < TypedDataListInt.limit8) return _Field2D8(width, height);
+    if (size < TypedDataListInt.limit16) return _Field2D16(width, height);
+    if (size > TypedDataListInt.sizeEach32 && native) {
+      return _Field2D64(width, height, TypedDataListInt.quotientCeil64(size));
     }
-    return _Field2D32(width, height, TypedDateListInt.quotientCeil32(size));
+    return _Field2D32(width, height, TypedDataListInt.quotientCeil32(size));
   }
 }
 
@@ -116,7 +116,7 @@ abstract class Field3D extends FieldParent
         _MBitsField,
         _MFieldContainerPositionAble<(int, int, int)>,
         _MSetBitsField<(int, int, int)>,
-        _MSetFieldIndexable<(int, int, int)>,
+        _MSetFieldBitsIndexable<(int, int, int)>,
         _MSetBitsFieldSpatial3,
         _MFieldOperatable<Field3D>,
         _MOnFlagsIndexSub<Field2D, (int, int, int), (int, int)>,
@@ -145,23 +145,23 @@ abstract class Field3D extends FieldParent
   factory Field3D(int width, int height, int depth, [bool native = false]) {
     assert(width > 1 && height > 1 && depth > 1);
     final size = width * height * depth;
-    if (size < TypedDateListInt.limit8) return _Field3D8(width, height, depth);
-    if (size < TypedDateListInt.limit16) {
+    if (size < TypedDataListInt.limit8) return _Field3D8(width, height, depth);
+    if (size < TypedDataListInt.limit16) {
       return _Field3D16(width, height, depth);
     }
-    if (size > TypedDateListInt.sizeEach32 && native) {
+    if (size > TypedDataListInt.sizeEach32 && native) {
       return _Field3D64(
         width,
         height,
         depth,
-        TypedDateListInt.quotientCeil64(size),
+        TypedDataListInt.quotientCeil64(size),
       );
     }
     return _Field3D32(
       width,
       height,
       depth,
-      TypedDateListInt.quotientCeil32(size),
+      TypedDataListInt.quotientCeil32(size),
     );
   }
 }
@@ -175,7 +175,7 @@ abstract class Field4D extends FieldParent
         _MBitsField,
         _MFieldContainerPositionAble<(int, int, int, int)>,
         _MSetBitsField<(int, int, int, int)>,
-        _MSetFieldIndexable<(int, int, int, int)>,
+        _MSetFieldBitsIndexable<(int, int, int, int)>,
         _MSetBitsFieldSpatial4,
         _MFieldOperatable<Field4D>,
         _MOnFlagsIndexSub<Field3D, (int, int, int, int), (int, int, int)>,
@@ -212,12 +212,12 @@ abstract class Field4D extends FieldParent
   factory Field4D(int s1, int s2, int s3, int s4, [bool native = false]) {
     assert(s1 > 1 && s2 > 1 && s3 > 1 && s4 > 1);
     final size = s1 * s2 * s3 * s4;
-    if (size < TypedDateListInt.limit8) return _Field4D8(s1, s2, s3, s4);
-    if (size < TypedDateListInt.limit16) return _Field4D16(s1, s2, s3, s4);
-    if (size > TypedDateListInt.sizeEach32 && native) {
-      return _Field4D64(s1, s2, s3, s4, TypedDateListInt.quotientCeil64(size));
+    if (size < TypedDataListInt.limit8) return _Field4D8(s1, s2, s3, s4);
+    if (size < TypedDataListInt.limit16) return _Field4D16(s1, s2, s3, s4);
+    if (size > TypedDataListInt.sizeEach32 && native) {
+      return _Field4D64(s1, s2, s3, s4, TypedDataListInt.quotientCeil64(size));
     }
-    return _Field4D32(s1, s2, s3, s4, TypedDateListInt.quotientCeil32(size));
+    return _Field4D32(s1, s2, s3, s4, TypedDataListInt.quotientCeil32(size));
   }
 }
 
@@ -227,7 +227,6 @@ abstract class Field4D extends FieldParent
 class FieldDatesInMonths extends FieldParent
     with
         _MFlagsContainerScopedDate<bool>,
-        _MBitsFieldMonthsDates,
         _MFieldContainerMonthsDates,
         _MSetFieldMonthsDatesScoped,
         _MSetBitsFieldMonthsDates,

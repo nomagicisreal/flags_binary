@@ -2,10 +2,10 @@
 import 'package:flags_binary/flags_binary.dart';
 
 void main() {
-  final field = Field(99);
-  field.includesSub(20, 23);
-  print(field.availablesLatest(22));
-  print(field.toSlot<String>((value) => 's:$value'));
+  // final field = Field(99);
+  // field.includesSub(20, 23);
+  // print(field.availablesLatest(22));
+  // print(field.toSlot<String>((value) => 's:$value'));
 
   // final field = Field2D(10, 22);
   // field.includesOn(5, [1, 2, 7, 9, 18]);
@@ -23,11 +23,20 @@ void main() {
   // print(field.firstAfter((1, 2, 1, 1)));
   // print(field.collapseOn(2).collapseOn(4));
 
-  // final field = FieldDatesInMonths((2025, 7), (2025, 12));
+
+  final field = FieldDatesInMonths((2025, 7), (2025, 12));
   // field.includesSub((2025, 8, 10), (2025, 9, 20));
   // print(field.availablesRecent((2025, 9, 18)));
   // print(field.availablesLatest((2025, 8, 12)));
-  // print(field.toString());
+  // field
+  //   ..[(2025, 8, 9)] = true
+  //   ..[(2025, 11, 29)] = true
+  //   ..[(2025, 12, 1)] = true;
+  field[(2025, 8, 9)] = true;
+  field[(2025, 12, 1)] = true;
+  // field[(2025, 12, 30)] = true;
+  print(field.toString());
+  print(field..shift(5));
 
   // final slot = Slot<String>(29);
   // slot.includesFrom(['he', 'she', 'it'], 5, false);
@@ -44,6 +53,4 @@ void main() {
   // final slot = Slot4D<String>(5, 3, 4, 2);
   // slot.includesFrom(['he', 'she', 'it'], (5, 2, 2, 1), false);
   // print(slot.toString());
-
-
 }

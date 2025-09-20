@@ -18,9 +18,8 @@ part of '../../flags_binary.dart';
 /// [_MFieldContainerMonthsDates]
 /// [_MSlotContainerPositionAble]
 ///
-/// [_MFieldOperatable]
-/// [_MSlotEquatable]
 /// [_MSlotField]
+/// [_MFieldSlot]
 ///
 /// concrete class:
 /// [_Field8], ...
@@ -38,46 +37,46 @@ part of '../../flags_binary.dart';
 ///
 mixin _MFlagsO8 implements _AFieldBits, _AFieldIdentical {
   @override
-  int get _shift => TypedDateListInt.shift8;
+  int get _shift => TypedDataListInt.shift8;
 
   @override
-  int get _mask => TypedDateListInt.mask8;
+  int get _mask => TypedDataListInt.mask8;
 
   @override
-  int get _sizeEach => TypedDateListInt.sizeEach8;
+  int get _sizeEach => TypedDataListInt.sizeEach8;
 }
 
 mixin _MFlagsO16 implements _AFieldBits, _AFieldIdentical {
   @override
-  int get _shift => TypedDateListInt.shift16;
+  int get _shift => TypedDataListInt.shift16;
 
   @override
-  int get _mask => TypedDateListInt.mask16;
+  int get _mask => TypedDataListInt.mask16;
 
   @override
-  int get _sizeEach => TypedDateListInt.sizeEach16;
+  int get _sizeEach => TypedDataListInt.sizeEach16;
 }
 
 mixin _MFlagsO32 implements _AFieldBits, _AFieldIdentical {
   @override
-  int get _shift => TypedDateListInt.shift32;
+  int get _shift => TypedDataListInt.shift32;
 
   @override
-  int get _mask => TypedDateListInt.mask32;
+  int get _mask => TypedDataListInt.mask32;
 
   @override
-  int get _sizeEach => TypedDateListInt.sizeEach32;
+  int get _sizeEach => TypedDataListInt.sizeEach32;
 }
 
 mixin _MFlagsO64 implements _AFieldBits, _AFieldIdentical {
   @override
-  int get _shift => TypedDateListInt.shift64;
+  int get _shift => TypedDataListInt.shift64;
 
   @override
-  int get _mask => TypedDateListInt.mask64;
+  int get _mask => TypedDataListInt.mask64;
 
   @override
-  int get _sizeEach => TypedDateListInt.sizeEach64;
+  int get _sizeEach => TypedDataListInt.sizeEach64;
 }
 
 ///
@@ -174,26 +173,11 @@ mixin _MFlagsScopedDatePositionDay
 ///
 ///
 mixin _MBitsField implements _AField, _AFieldBits {
-  bool _bOn(int b) => _field.bOn(b, _shift, _mask);
+  bool _bOn(int b) => _field.iOn(b, _shift, _mask);
 
-  void _bSet(int b) => _field.bSet(b, _shift, _mask);
+  void _bSet(int b) => _field.iSet(b, _shift, _mask);
 
-  void _bClear(int b) => _field.bClear(b, _shift, _mask);
-}
-
-mixin _MBitsFieldMonthsDates
-    implements _AField, _AFieldIdentical, _AFlagsScoped<(int, int)> {
-  static bool _bOn(TypedDataList<int> field, int j, int i) =>
-      field[j] >> i & 1 == 1;
-
-  static void _bSet(TypedDataList<int> field, int j, int i) =>
-      field[j] |= 1 << i;
-
-  static void _bClear(TypedDataList<int> field, int j, int i) =>
-      field[j] &= ~(1 << i);
-
-  @override
-  int get _sizeEach => TypedDateListInt.sizeEach32;
+  void _bClear(int b) => _field.iClear(b, _shift, _mask);
 }
 
 ///
@@ -215,31 +199,26 @@ mixin _MFieldContainerPositionAble<I> on _MBitsField
 }
 
 mixin _MFieldContainerMonthsDates on _MFlagsContainerScopedDate<bool>
-    implements _MBitsFieldMonthsDates {
+    implements _AFieldIdentical {
+  @override
+  int get _sizeEach => TypedDataListInt.sizeEach32;
+
   @override
   bool operator []((int, int, int) index) {
     assert(validateIndex(index));
-    return _MBitsFieldMonthsDates._bOn(
-      _field,
-      begin.monthsToYearMonth(index.$1, index.$2),
-      index.$3,
-    );
+    return _field[begin.monthsToYearMonth(index.$1, index.$2)] >> index.$3 - 1 &
+            1 ==
+        1;
   }
 
   @override
   void operator []=((int, int, int) index, bool value) {
     assert(validateIndex(index));
     value
-        ? _MBitsFieldMonthsDates._bSet(
-            _field,
-            begin.monthsToYearMonth(index.$1, index.$2),
-            index.$3,
-          )
-        : _MBitsFieldMonthsDates._bClear(
-            _field,
-            begin.monthsToYearMonth(index.$1, index.$2),
-            index.$3,
-          );
+        ? _field[begin.monthsToYearMonth(index.$1, index.$2)] |=
+              1 << index.$3 - 1
+        : _field[begin.monthsToYearMonth(index.$1, index.$2)] &=
+              ~(1 << index.$3 - 1);
   }
 }
 
@@ -255,126 +234,6 @@ mixin _MSlotContainerPositionAble<I, T>
   void operator []=(I index, T? value) {
     assert(validateIndex(index));
     _slot[_bOf(index)] = value;
-  }
-}
-
-///
-///
-///
-mixin _MFieldOperatable<F extends FieldParent>
-    implements _AField, _AFieldIdentical, _AFlagsOperatable<F> {
-  @override
-  bool isSizeEqual(F other) {
-    if (_sizeEach != other._sizeEach) return false;
-    return _field.length == other._field.length;
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (other is! F) return false;
-    if (_sizeEach != other._sizeEach) return false;
-    final fA = _field;
-    final fB = other._field;
-    final length = fA.length;
-    if (length != fB.length) return false;
-    for (var i = 0; i < length; i++) {
-      if (fA[i] != fB[i]) return false;
-    }
-    return true;
-  }
-
-  @override
-  F operator &(F other) {
-    assert(isSizeEqual(other));
-    final fA = _field;
-    final length = fA.length;
-    final result = newZero;
-    final fB = other._field;
-    final fR = result._field;
-    for (var i = 0; i < length; i++) {
-      fR[i] = fA[i] & fB[i];
-    }
-    return result;
-  }
-
-  @override
-  F operator |(F other) {
-    assert(isSizeEqual(other));
-    final fA = _field;
-    final length = fA.length;
-    final result = newZero;
-    final fB = other._field;
-    final fR = result._field;
-    for (var i = 0; i < length; i++) {
-      fR[i] = fA[i] | fB[i];
-    }
-    return result;
-  }
-
-  @override
-  F operator ^(F other) {
-    assert(isSizeEqual(other));
-    final fA = _field;
-    final length = fA.length;
-    final result = newZero;
-    final fB = other._field;
-    final fR = result._field;
-    for (var i = 0; i < length; i++) {
-      fR[i] = fA[i] ^ fB[i];
-    }
-    return result;
-  }
-
-  @override
-  void setAnd(F other) {
-    assert(isSizeEqual(other));
-    final fA = _field;
-    final fB = other._field;
-    final length = fA.length;
-    for (var i = 0; i < length; i++) {
-      fA[i] &= fB[i];
-    }
-  }
-
-  @override
-  void setOr(F other) {
-    assert(isSizeEqual(other));
-    final fA = _field;
-    final fB = other._field;
-    final length = fA.length;
-    for (var i = 0; i < length; i++) {
-      fA[i] |= fB[i];
-    }
-  }
-
-  @override
-  void setXOr(F other) {
-    assert(isSizeEqual(other));
-    final fA = _field;
-    final fB = other._field;
-    final length = fA.length;
-    for (var i = 0; i < length; i++) {
-      fA[i] ^= fB[i];
-    }
-  }
-}
-
-mixin _MSlotEquatable<T, S extends SlotParent<T>>
-    implements _ASlot<T>, _AFlagsEquatable<S> {
-  @override
-  bool isSizeEqual(S other) => _slot.length == other._slot.length;
-
-  @override
-  bool operator ==(Object other) {
-    if (other is! S) return false;
-    final sA = _slot;
-    final sB = other._slot;
-    final length = sA.length;
-    if (length != sB.length) return false;
-    for (var i = 0; i < length; i++) {
-      if (sA[i] != sB[i]) return false;
-    }
-    return true;
   }
 }
 

@@ -77,22 +77,18 @@ bool _isValidDate((int, int, int) date) {
   return _isValidDay(date.$1, month, date.$3);
 }
 
-// bool _isInvalidDate((int, int, int) date) {
-//   final month = date.$2;
-//   if (_isValidMonth(month)) return false;
-//   return _isInvalidDay(date.$1, month, date.$3);
-// }
+bool _isInvalidDate((int, int, int) date) {
+  final month = date.$2;
+  if (_isValidMonth(month)) return false;
+  return _isInvalidDay(date.$1, month, date.$3);
+}
 
 ///
 ///
 ///
 int _monthDaysOf(int year, int month) {
   assert(_isValidMonth(month));
-  return month == 2
-      ? _isYearLeapYear(year)
-            ? 29
-            : 28
-      : _monthsDaysWithoutFeb[month]!;
+  return _monthsDaysWithoutFeb[month] ?? (_isYearLeapYear(year) ? 29 : 28);
 }
 
 int yearDaysOf(int year) => _isYearLeapYear(year) ? 366 : 365;
@@ -138,6 +134,29 @@ extension _NullableListExtension<T> on List<T?> {
     for (var i = length - 1; i >= 0; i--) {
       final item = this[i];
       if (item != null) yield item;
+    }
+  }
+
+  void shift(int count, [int begin = 0, int? end]) {
+    final last = end ?? length - 1;
+    if (count == 0 || count >= last || count <= -last) return;
+    if (count > 0) {
+      var i = last;
+      for (; i >= count; i--) {
+        this[i] = this[i - count];
+      }
+      for (; i >= begin; i--) {
+        this[i] = null;
+      }
+    } else {
+      final c = -count;
+      var i = 0;
+      for (; i < c; i++) {
+        this[i] = this[c + i];
+      }
+      for (; i <= last; i++) {
+        this[i] = null;
+      }
     }
   }
 }

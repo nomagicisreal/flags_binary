@@ -4,7 +4,8 @@ part of '../../flags_binary.dart';
 ///
 ///
 /// [_MSetField]
-/// [_MSetFieldIndexable]
+/// [_MSetFieldBits]
+/// [_MSetFieldBitsIndexable]
 /// [_MSetFieldMonthsDatesScoped]
 /// [_MSetSlot]
 /// [_MSetBitsField]
@@ -20,21 +21,28 @@ part of '../../flags_binary.dart';
 ///
 ///
 ///
-mixin _MSetField
+mixin _MSetFieldBits
     implements _AFlagsSet<int, int>, _AField, _AFieldIdentical, _AFieldBits {
   @override
-  int? get first => _field.bFirst(_sizeEach);
+  void shift(int count, [int from = 0, int? to]) =>
+      _field.shift(count, from, to);
+
+  ///
+  ///
+  ///
+  @override
+  int? get first => _field.iFirst(_sizeEach);
 
   @override
-  int? get last => _field.bLast(_sizeEach);
+  int? get last => _field.iLast(_sizeEach);
 
   @override
   int? firstAfter(int index) =>
-      _field.bFirstAfter(index, _shift, _mask, _sizeEach);
+      _field.iFirstAfter(index, _shift, _mask, _sizeEach);
 
   @override
   int? lastBefore(int index) =>
-      _field.bLastBefore(index, _shift, _mask, _sizeEach);
+      _field.iLastBefore(index, _shift, _mask, _sizeEach);
 
   @override
   Iterable<int> get availablesForward => _field.bitsForward(_sizeEach);
@@ -89,26 +97,39 @@ mixin _MSetField
   }
 }
 
-mixin _MSetFieldIndexable<I> on _MFieldContainerPositionAble<I>
+mixin _MSetFieldBitsIndexable<I> on _MFieldContainerPositionAble<I>
     implements
         _AFlagsIndexable<I>,
         _AField,
         _AFieldIdentical,
         _AFlagsSet<I, I> {
+  ///
+  ///
+  ///
   @override
-  I? get first => _field.bFirst(_sizeEach).nullOrMap(_indexOf);
+  void shift(int count, [I? from, I? to]) => _field.shift(
+    count,
+    from == null ? 0 : _bOf(from),
+    to == null ? 0 : _bOf(to),
+  );
+
+  ///
+  ///
+  ///
+  @override
+  I? get first => _field.iFirst(_sizeEach).nullOrMap(_indexOf);
 
   @override
-  I? get last => _field.bLast(_sizeEach).nullOrMap(_indexOf);
+  I? get last => _field.iLast(_sizeEach).nullOrMap(_indexOf);
 
   @override
   I? firstAfter(I index) => _field
-      .bFirstAfter(_bOf(index), _shift, _mask, _sizeEach)
+      .iFirstAfter(_bOf(index), _shift, _mask, _sizeEach)
       .nullOrMap(_indexOf);
 
   @override
   I? lastBefore(I index) => _field
-      .bLastBefore(_bOf(index), _shift, _mask, _sizeEach)
+      .iLastBefore(_bOf(index), _shift, _mask, _sizeEach)
       .nullOrMap(_indexOf);
 
   @override
@@ -193,6 +214,19 @@ mixin _MSetFieldIndexable<I> on _MFieldContainerPositionAble<I>
 ///
 mixin _MSetSlot<I, T>
     implements _ASlot<T>, _ASlotSet<I, T>, _AFlagsBitsAble<I> {
+  ///
+  ///
+  ///
+  @override
+  void shift(int count, [I? from, I? to]) => _slot.shift(
+    count,
+    from == null ? 0 : _bOf(from),
+    to == null ? 0 : _bOf(to),
+  );
+
+  ///
+  ///
+  ///
   @override
   T? get first {
     final slot = _slot, length = slot.length;
@@ -250,9 +284,9 @@ mixin _MSetSlot<I, T>
     if (to == null) {
       iTo = last;
     } else {
-      final bLast = _bOf(to);
-      if (bLast < 0) return;
-      iTo = math.min(bLast, last);
+      final iLast = _bOf(to);
+      if (iLast < 0) return;
+      iTo = math.min(iLast, last);
     }
     int i;
     if (from == null) {
@@ -342,9 +376,9 @@ mixin _MSetSlot<I, T>
 
   @override
   void includesTo(Iterable<T> iterable, I last, [bool inclusive = true]) {
-    final slot = _slot, bLast = inclusive ? _bOf(last) : _bOf(last) - 1;
-    assert(bLast < slot.length);
-    var i = bLast - iterable.length + 1;
+    final slot = _slot, iLast = inclusive ? _bOf(last) : _bOf(last) - 1;
+    assert(iLast < slot.length);
+    var i = iLast - iterable.length + 1;
     assert(i >= 0);
     for (var it in iterable) {
       slot[i] = it;

@@ -55,13 +55,20 @@ abstract class _AFlagsSpatial4 implements _AFlagsSpatial3 {
 ///
 /// All flags index start from 1, because it's impossible for bitFlags implementation to have [int.bitLength] < 1.
 /// Starting from 1 prevents subtraction finding last index for each iterable element
-/// see also [TypedDateListInt.bLastOf], [TypedDateListInt.bitsBackwardOf]
+/// see also [TypedDataListInt.iLastOf], [TypedDataListInt.bitsBackwardOf]
 ///
 abstract class _AFlagsBitsAble<I> implements _PFlags {
+  ///
+  /// notice that [index] starts from 1
+  /// Considering efficiency and consistency between [TypedDataListInt.bitsForward], ..., [TypedDataListInt.bitsBackward], ...
+  ///
   int _bOf(I index);
 }
 
 abstract class _AFlagsIndexable<I> implements _PFlags {
+  ///
+  /// notice that [position] starts from 0, which is the default start accessing list
+  ///
   I _indexOf(int position);
 }
 
@@ -94,6 +101,8 @@ abstract class _AFlagsOperatable<F> implements _AFlagsEquatable<F> {
 }
 
 abstract class _AFlagsSet<I, T> implements _PFlags {
+  void shift(int count, [I from, I? to]);
+
   T? get first;
 
   T? get last;
@@ -106,9 +115,6 @@ abstract class _AFlagsSet<I, T> implements _PFlags {
 
   Iterable<T> get availablesBackward;
 
-  ///
-  /// to prevent duplicate implementation, there is no [availablesFrom] or [availablesTo]
-  ///
   Iterable<T> availablesRecent([I from, I to]);
 
   Iterable<T> availablesLatest([I from, I to]);
@@ -121,20 +127,20 @@ abstract class _AField implements _PFlags {
   TypedDataList<int> get _field;
 }
 
-abstract class _AFieldIdentical implements _PFlags {
+abstract class _AFieldIdentical implements _AField {
   int get _sizeEach;
 
   int get size;
 }
 
-abstract class _AFieldBits implements _PFlags {
+abstract class _AFieldBits implements _AField {
   // int get _shift => math.log(_sizeEach) ~/ math.ln2 - 1;
   int get _shift;
 
   int get _mask;
 }
 
-abstract class _AFieldSet<I, T> implements _AFlagsSet<I, T> {
+abstract class _AFieldSet<I, T> implements _AFlagsSet<I, T>, _AField {
   void includesSub(T from, [T? to]);
 
   void excludesSub(T from, [T? to]);
